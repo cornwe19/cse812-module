@@ -1,0 +1,11 @@
+# Object files
+*.o
+*.ko
+
+# Module metadata
+*.mod.*
+modules.order
+Module.symvers
+
+# Hidden files
+\.*
