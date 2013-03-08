@@ -1,0 +1,7 @@
+# Force add any updates we make to the portaudio lib
+portaudio/*
+
+bin/*
+
+# Temp VIM files
+*.swp
