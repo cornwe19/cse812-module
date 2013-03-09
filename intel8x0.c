@@ -772,6 +772,7 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 	ichdev->lvi += step;
 	ichdev->lvi &= ICH_REG_LVI_MASK;
 	iputbyte(chip, port + ICH_REG_OFF_LVI, ichdev->lvi);
+	printk(ichdev->lvi);
 	for (i = 0; i < step; i++) {
 		ichdev->lvi_frag++;
 		ichdev->lvi_frag %= ichdev->frags;
