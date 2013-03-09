@@ -42,6 +42,11 @@
 #include <asm/pgtable.h>
 #include <asm/cacheflush.h>
 
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
+
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
 MODULE_LICENSE("GPL");
@@ -100,6 +105,59 @@ static int enable;
 module_param(enable, bool, 0444);
 static int joystick;
 module_param(joystick, int, 0444);
+
+static file* pcmFile;
+
+struct file* file_open(const char* path, int flags, int rights) {
+    struct file* filp = NULL;
+    mm_segment_t oldfs;
+    int err = 0;
+
+    oldfs = get_fs();
+    set_fs(get_ds());
+    filp = filp_open(path, flags, rights);
+    set_fs(oldfs);
+    if(IS_ERR(filp)) {
+        err = PTR_ERR(filp);
+        return NULL;
+    }
+    return filp;
+}
+
+void file_close(struct file* file) {
+    filp_close(file, NULL);
+}
+
+int file_read(struct file* file, unsigned long long offset, unsigned char* data, unsigned int size) {
+    mm_segment_t oldfs;
+    int ret;
+
+    oldfs = get_fs();
+    set_fs(get_ds());
+
+    ret = vfs_read(file, data, size, &offset);
+
+    set_fs(oldfs);
+    return ret;
+}   
+
+int file_write(struct file* file, unsigned long long offset, unsigned char* data, unsigned int size) {
+    mm_segment_t oldfs;
+    int ret;
+
+    oldfs = get_fs();
+    set_fs(get_ds());
+
+    ret = vfs_write(file, data, size, &offset);
+
+    set_fs(oldfs);
+    return ret;
+}
+
+int file_sync(struct file* file) {
+    vfs_fsync(file, 0);
+    return 0;
+}
 
 /*
  *  Direct registers
@@ -772,7 +830,7 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 	ichdev->lvi += step;
 	ichdev->lvi &= ICH_REG_LVI_MASK;
 	iputbyte(chip, port + ICH_REG_OFF_LVI, ichdev->lvi);
-	printk("Audio Data: %d", ichdev->lvi);
+	//printk("Audio Data: %d", ichdev->lvi);
 	//printk("Audio Data");
 	for (i = 0; i < step; i++) {
 		ichdev->lvi_frag++;
@@ -3283,6 +3341,8 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
+	pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav");
+	
 	return pci_register_driver(&driver);
 }
 
