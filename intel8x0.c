@@ -740,7 +740,7 @@ static void fill_nocache(void *buf, int size, int nocache)
 
 static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ichdev)
 {
-	printk("intel8x0: Update\n");
+	//printk("intel8x0: Update\n");
 
 	unsigned long port = ichdev->reg_offset;
 	unsigned long flags;
@@ -773,6 +773,7 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 	ichdev->lvi &= ICH_REG_LVI_MASK;
 	iputbyte(chip, port + ICH_REG_OFF_LVI, ichdev->lvi);
 	//printk("Audio Data: %d", ichdev->lvi);
+	printk("Audio Data");
 	for (i = 0; i < step; i++) {
 		ichdev->lvi_frag++;
 		ichdev->lvi_frag %= ichdev->frags;
@@ -799,7 +800,7 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 
 static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id)
 {
-	printk("intel8x0: Interrupt\n");
+	//printk("intel8x0: Interrupt\n");
 
 	struct intel8x0 *chip = dev_id;
 	struct ichdev *ichdev;
