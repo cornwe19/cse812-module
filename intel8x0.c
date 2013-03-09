@@ -42,10 +42,10 @@
 #include <asm/pgtable.h>
 #include <asm/cacheflush.h>
 
-//#include <linux/fs.h>
-#//include <asm/segment.h>
-//#include <asm/uaccess.h>
-//#include <linux/buffer_head.h>
+#include <linux/fs.h>
+include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
@@ -154,10 +154,10 @@ int file_write(struct file* file, unsigned long long offset, unsigned char* data
     return ret;
 }
 
-int file_sync(struct file* file) {
-    vfs_fsync(file, 0);
-    return 0;
-}
+//int file_sync(struct file* file) {
+ //   vfs_fsync(file, 0);
+ //   return 0;
+//}
 
 /*
  *  Direct registers
@@ -833,10 +833,10 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 	//printk("Audio Data: %d", ichdev->lvi);
 	//printk("Audio Data");
 
-	//if(pcmFile != NULL)
-	//{
-		//file_write(pcmFile, 0, lvi, 1);
-	//}
+	if(pcmFile != NULL)
+	{
+		file_write(pcmFile, 0, lvi, 1);
+	}
 
 	for (i = 0; i < step; i++) {
 		ichdev->lvi_frag++;
@@ -3347,17 +3347,17 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
-	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav");
+	pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav");
 
 	return pci_register_driver(&driver);
 }
 
 static void __exit alsa_card_intel8x0_exit(void)
 {
-	//if(pcmFile != NULL)
-	//{
-		//file_close(pcmFile);
-	//}
+	if(pcmFile != NULL)
+	{
+		file_close(pcmFile);
+	}
 
 	pci_unregister_driver(&driver);
 }
