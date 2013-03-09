@@ -42,10 +42,10 @@
 #include <asm/pgtable.h>
 #include <asm/cacheflush.h>
 
-#include <linux/fs.h>
-#include <asm/segment.h>
-#include <asm/uaccess.h>
-#include <linux/buffer_head.h>
+//#include <linux/fs.h>
+#//include <asm/segment.h>
+//#include <asm/uaccess.h>
+//#include <linux/buffer_head.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
@@ -106,7 +106,7 @@ module_param(enable, bool, 0444);
 static int joystick;
 module_param(joystick, int, 0444);
 
-static file* pcmFile;
+//static file* pcmFile;
 
 struct file* file_open(const char* path, int flags, int rights) {
     struct file* filp = NULL;
