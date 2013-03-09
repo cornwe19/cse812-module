@@ -832,6 +832,12 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 	iputbyte(chip, port + ICH_REG_OFF_LVI, ichdev->lvi);
 	//printk("Audio Data: %d", ichdev->lvi);
 	//printk("Audio Data");
+
+	//if(pcmFile != NULL)
+	//{
+		//file_write(pcmFile, 0, lvi, 1);
+	//}
+
 	for (i = 0; i < step; i++) {
 		ichdev->lvi_frag++;
 		ichdev->lvi_frag %= ichdev->frags;
@@ -3341,13 +3347,18 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
-	pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav");
-	
+	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav");
+
 	return pci_register_driver(&driver);
 }
 
 static void __exit alsa_card_intel8x0_exit(void)
 {
+	//if(pcmFile != NULL)
+	//{
+		//file_close(pcmFile);
+	//}
+
 	pci_unregister_driver(&driver);
 }
 
