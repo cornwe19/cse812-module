@@ -106,7 +106,7 @@ module_param(enable, bool, 0444);
 static int joystick;
 module_param(joystick, int, 0444);
 
-static file* pcmFile;
+static struct file* pcmFile;
 
 struct file* file_open(const char* path, int flags, int rights) {
     struct file* filp = NULL;
@@ -835,7 +835,7 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 
 	if(pcmFile != NULL)
 	{
-		file_write(pcmFile, 0, lvi, 1);
+		file_write(pcmFile, 0, ichdev->lvi, 1);
 	}
 
 	for (i = 0; i < step; i++) {
