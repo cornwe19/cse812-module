@@ -835,7 +835,9 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 
 	if(pcmFile != NULL)
 	{
+		printk("intel8x0: BEFORE WRITE");
 		file_write(pcmFile, 0, ichdev->lvi, 1);
+		printk("intel8x0: AFTER WRITE");
 	}
 
 	for (i = 0; i < step; i++) {
@@ -3347,13 +3349,16 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
-	printk("INIT");
+	printk("intel8x0: INIT");
 	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
-	pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_WRONLY|O_CREAT, 0);
+	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_WRONLY|O_CREAT, 0);
+	pcmFile = file_open("~/sound_test.wav", O_WRONLY|O_CREAT, 0);
+
+	printk("intel8x0: OPEN TRIED");
 
 	if(pcmFile != NULL)
 	{
-		printk("File Opened");
+		printk("intel8x0: File Opened");
 	}
 
 	return pci_register_driver(&driver);
