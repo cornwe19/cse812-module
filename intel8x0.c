@@ -607,7 +607,7 @@ static void snd_intel8x0_codec_write(struct snd_ac97 *ac97,
 				     unsigned short reg,
 				     unsigned short val)
 {
-	printk("intel8x0: codec write\n");
+	//printk("intel8x0: codec write\n");
 
 	struct intel8x0 *chip = ac97->private_data;
 	
@@ -621,7 +621,7 @@ static void snd_intel8x0_codec_write(struct snd_ac97 *ac97,
 static unsigned short snd_intel8x0_codec_read(struct snd_ac97 *ac97,
 					      unsigned short reg)
 {
-	printk("intel8x0: Codec Read\n");
+	//printk("intel8x0: Codec Read\n");
 
 	struct intel8x0 *chip = ac97->private_data;
 	unsigned short res;
