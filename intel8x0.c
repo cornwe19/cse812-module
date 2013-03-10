@@ -43,7 +43,7 @@
 #include <asm/cacheflush.h>
 
 #include <linux/fs.h>
-include <asm/segment.h>
+#include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
 
