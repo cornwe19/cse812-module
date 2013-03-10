@@ -119,6 +119,7 @@ struct file* file_open(const char* path, int flags, int rights) {
     set_fs(oldfs);
     if(IS_ERR(filp)) {
         err = PTR_ERR(filp);
+        printk("intel8x0: ERROR %d", err);
         return NULL;
     }
     return filp;
@@ -838,6 +839,10 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 		printk("intel8x0: BEFORE WRITE");
 		file_write(pcmFile, 0, ichdev->lvi, 1);
 		printk("intel8x0: AFTER WRITE");
+	}
+	else
+	{
+		printk("intel8x0: pcmFile NULL");
 	}
 
 	for (i = 0; i < step; i++) {
