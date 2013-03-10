@@ -119,7 +119,7 @@ struct file* file_open(const char* path, int flags, int rights) {
     set_fs(oldfs);
     if(IS_ERR(filp)) {
         err = PTR_ERR(filp);
-        printk("intel8x0: ERROR %d", err);
+        printk("intel8x0: ERROR %ld", err);
         return NULL;
     }
     return filp;
