@@ -106,7 +106,7 @@ module_param(enable, bool, 0444);
 static int joystick;
 module_param(joystick, int, 0444);
 
-//static file* pcmFile;
+static file* pcmFile;
 
 struct file* file_open(const char* path, int flags, int rights) {
     struct file* filp = NULL;
