@@ -119,7 +119,7 @@ struct file* file_open(const char* path, int flags, int rights) {
     set_fs(oldfs);
     if(IS_ERR(filp)) {
         err = PTR_ERR(filp);
-        printk("intel8x0: ERROR %ld", err);
+        printk("intel8x0: ERROR %ld\n", err);
         return NULL;
     }
     return filp;
@@ -836,13 +836,22 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 
 	if(pcmFile != NULL)
 	{
-		printk("intel8x0: BEFORE WRITE");
+		printk("intel8x0: BEFORE WRITE\n");
 		file_write(pcmFile, 0, ichdev->lvi, 1);
-		printk("intel8x0: AFTER WRITE");
+		printk("intel8x0: AFTER WRITE\n");
 	}
 	else
 	{
-		printk("intel8x0: pcmFile NULL");
+		printk("intel8x0: pcmFile NULL\n");
+
+		pcmFile = file_open("~/sound_test.wav", O_WRONLY|O_CREAT, 0);
+
+		printk("intel8x0: OPEN TRIED AGAIN\n");
+
+		if(pcmFile != NULL)
+		{
+			printk("intel8x0: File Opened AGAIN\n");
+		}
 	}
 
 	for (i = 0; i < step; i++) {
@@ -3354,16 +3363,16 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
-	printk("intel8x0: INIT");
+	printk("intel8x0: INIT\n");
 	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
 	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_WRONLY|O_CREAT, 0);
 	pcmFile = file_open("~/sound_test.wav", O_WRONLY|O_CREAT, 0);
 
-	printk("intel8x0: OPEN TRIED");
+	printk("intel8x0: OPEN TRIED\n");
 
 	if(pcmFile != NULL)
 	{
-		printk("intel8x0: File Opened");
+		printk("intel8x0: File Opened\n");
 	}
 
 	return pci_register_driver(&driver);
