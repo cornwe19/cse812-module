@@ -3347,8 +3347,14 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_intel8x0_init(void)
 {
+	printk("INIT");
 	//pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_CREAT | O_RDWR | O_LARGEFILE, 0600);
 	pcmFile = file_open("/home/lesnaubr/cse812-module/sound_test.wav", O_WRONLY|O_CREAT, 0);
+
+	if(pcmFile != NULL)
+	{
+		printk("File Opened");
+	}
 
 	return pci_register_driver(&driver);
 }
