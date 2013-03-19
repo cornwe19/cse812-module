@@ -6,6 +6,16 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 
+//#include <cstdlib>
+//#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <net/sock.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <cstring>
+
+#define NETLINK_TEST 31
+
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
 MODULE_LICENSE( "Dual BSD/GPL" );
