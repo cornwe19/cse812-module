@@ -1,7 +1,17 @@
 #include <iostream>
 #include <cstdlib>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 
 using namespace std;
+
+#define NETLINK_USER 31
+#define MAX_PAYLOAD 1024 /* maximum payload size*/
+struct sockaddr_nl src_addr, dest_addr;
+struct nlmsghdr *nlh = NULL;
+struct iovec iov;
+int sock_fd;
+struct msghdr msg;
 
 void OutputVolume(int volume)
 {
