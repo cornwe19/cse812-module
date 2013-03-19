@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <sys/socket.h>
 #include <linux/netlink.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
 
 using namespace std;
 
@@ -62,7 +65,7 @@ int main()
 	nlh->nlmsg_pid = getpid();  
 	nlh->nlmsg_flags = 0;  
 
-	strcpy(NLMSG_DATA(nlh), "Hello");  
+	strcpy((char*)NLMSG_DATA(nlh), "Hello");  
 
 	iov.iov_base = (void *)nlh;  
 	iov.iov_len = nlh->nlmsg_len;  
