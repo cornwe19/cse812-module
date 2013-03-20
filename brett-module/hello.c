@@ -121,6 +121,11 @@ static int __init hello_init( void ) {
 static void __exit hello_exit( void ) {
     printk( "<1>812 Unregistering the module" );
 
+    if (my_nl_sock) 
+    {
+      netlink_kernel_release(my_nl_sock);
+    }
+
     pci_unregister_driver( &driver );
 }
 

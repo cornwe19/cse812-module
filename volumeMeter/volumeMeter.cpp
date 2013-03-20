@@ -1,88 +1,48 @@
 #include <iostream>
 #include <cstdlib>
 #include <sys/socket.h>
-#include <linux/netlink.h>
+#include <netlink/netlink.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
 
 using namespace std;
 
-#define NETLINK_USER 31
-#define MAX_PAYLOAD 1024 /* maximum payload size*/
-struct sockaddr_nl src_addr, dest_addr;
-struct nlmsghdr *nlh = NULL;
-struct iovec iov;
-int sock_fd;
-struct msghdr msg;
-
-void OutputVolume(int volume)
-{
-	cout << "\rVolume : [";
-	
-	for(int i=1; i<=50; i++)
-	{
-		if(volume >= i*2)
-		{
-			cout << '|';
-		}
-		else
-		{
-			cout << ' ';
-		}
-	}	
-
-	cout << ']';
-	
-	cout.flush();
-}
+#define MY_MSG_TYPE (0x10 + 2)
 
 int main()
 {
 	cout << endl;
 
-	sock_fd=socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);  
-	if(sock_fd<0)  
-	    return -1;  
+	struct nl_sock *nls;
+    char msg[] = { 0xde, 0xad, 0xbe, 0xef, 0x90, 0x0d, 0xbe, 0xef };
+    int ret;
 
-	memset(&src_addr, 0, sizeof(src_addr));  
-	src_addr.nl_family = AF_NETLINK;  
-	src_addr.nl_pid = getpid();  /* self pid */  
-	/* interested in group 1<<0 */  
-	bind(sock_fd, (struct sockaddr*)&src_addr,  
-	  sizeof(src_addr));  
+    nls = nl_socket_alloc();
+    if (!nls) {
+        printf("bad nl_socket_alloc\n");
+        return EXIT_FAILURE;
+    }
 
-	memset(&dest_addr, 0, sizeof(dest_addr));  
-	memset(&dest_addr, 0, sizeof(dest_addr));  
-	dest_addr.nl_family = AF_NETLINK;  
-	dest_addr.nl_pid = 0;   /* For Linux Kernel */  
-	dest_addr.nl_groups = 0; /* unicast */  
+    ret = nl_connect(nls, NETLINK_USERSOCK);
+    if (ret < 0) {
+        nl_perror(ret, "nl_connect");
+        nl_socket_free(nls);
+        return EXIT_FAILURE;
+    }
 
-	nlh = (struct nlmsghdr *)malloc(  
-	                      NLMSG_SPACE(MAX_PAYLOAD));  
-	memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));  
-	nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);  
-	nlh->nlmsg_pid = getpid();  
-	nlh->nlmsg_flags = 0;  
+    ret = nl_send_simple(nls, MY_MSG_TYPE, 0, msg, sizeof(msg));
+    if (ret < 0) {
+        nl_perror(ret, "nl_send_simple");
+        nl_close(nls);
+        nl_socket_free(nls);
+        return EXIT_FAILURE;
+    } else {
+        printf("sent %d bytes\n", ret);
+    }
 
-	strcpy((char*)NLMSG_DATA(nlh), "Hello");  
-
-	iov.iov_base = (void *)nlh;  
-	iov.iov_len = nlh->nlmsg_len;  
-	msg.msg_name = (void *)&dest_addr;  
-	msg.msg_namelen = sizeof(dest_addr);  
-	msg.msg_iov = &iov;  
-	msg.msg_iovlen = 1;  
-
-	printf("Sending message to kernel\n");  
-	sendmsg(sock_fd,&msg,0);  
-	printf("Waiting for message from kernel\n");  
-
-	/* Read message from kernel */  
-	recvmsg(sock_fd, &msg, 0);  
-	printf(" Received message payload: %s\n",  
-	    NLMSG_DATA(nlh));  
-	close(sock_fd);  
+    nl_close(nls);
+    nl_socket_free(nls);
 
 	//for(int i=0; i<=10; i++)
 	//{
