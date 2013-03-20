@@ -6,15 +6,9 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 
-//#include <cstdlib>
-//#include <sys/socket.h>
-#include <linux/netlink.h>
+#include <linux/kernel.h>
 #include <net/sock.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <cstring>
-
-#define NETLINK_TEST 31
+#include <net/netlink.h>
 
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
@@ -49,34 +43,35 @@ static struct pci_device_id snd_simple_ids[] =  {
 	{ 0, }
 };
 
-struct sock *nl_sk = NULL;
+static struct sock *my_nl_sock;
 
-void nl_data_ready (struct sock *sk, int len)
+DEFINE_MUTEX(my_mutex);
+
+static int
+my_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 {
-  wake_up_interruptible(sk->sleep);
+    int type;
+    char *data;
+
+    type = nlh->nlmsg_type;
+    if (type != MY_MSG_TYPE) {
+        printk("%s: expect %#x got %#x\n", __func__, MY_MSG_TYPE, type);
+        return -EINVAL;
+    }
+
+    data = NLMSG_DATA(nlh);
+    printk("%s: %02x %02x %02x %02x %02x %02x %02x %02x\n", __func__,
+            data[0], data[1], data[2], data[3],
+            data[4], data[5], data[6], data[7]);
+    return 0;
 }
 
-void netlink_test() {
- struct sk_buff *skb = NULL;
- struct nlmsghdr *nlh = NULL;
- int err;
- u32 pid;
-
- nl_sk = netlink_kernel_create(NETLINK_TEST, nl_data_ready);
- /* wait for message coming down from user-space */
- skb = skb_recv_datagram(nl_sk, 0, 0, &err);
-
- nlh = (struct nlmsghdr *)skb->data;
- printk("%s: received netlink message payload:%s\n",
-        __FUNCTION__, NLMSG_DATA(nlh));
-
- pid = nlh->nlmsg_pid; /*pid of sending process */
- NETLINK_CB(skb).groups = 0; /* not in mcast group */
- NETLINK_CB(skb).pid = 0;      /* from kernel */
- NETLINK_CB(skb).dst_pid = pid;
- NETLINK_CB(skb).dst_groups = 0;  /* unicast */
- netlink_unicast(nl_sk, skb, pid, MSG_DONTWAIT);
- sock_release(nl_sk->socket);
+static void
+my_nl_rcv_msg(struct sk_buff *skb)
+{
+    mutex_lock(&my_mutex);
+    netlink_rcv_skb(skb, &my_rcv_msg);
+    mutex_unlock(&my_mutex);
 }
 
 static int __devinit snd_simple_create( struct pci_dev *pci, const struct pci_device_id *pci_id ) {
@@ -111,7 +106,13 @@ static int __init hello_init( void ) {
         return result;
     } else {
         print812( "Registered OK with code %d.", result );
-        netlink_test();
+        
+        my_nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, 0, my_nl_rcv_msg, NULL, THIS_MODULE);
+        if (!my_nl_sock) 
+        {
+          printk(KERN_ERR "%s: receive handler registration failed\n", __func__);
+          return -ENOMEM;
+        }
     }
 
     return 0;
