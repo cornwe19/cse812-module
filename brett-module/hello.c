@@ -44,6 +44,7 @@ static struct pci_device_id snd_simple_ids[] =  {
 };
 
 static struct sock *my_nl_sock;
+#define MY_MSG_TYPE (0x10 + 2)
 
 DEFINE_MUTEX(my_mutex);
 
