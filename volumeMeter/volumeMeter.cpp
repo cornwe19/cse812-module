@@ -1,48 +1,65 @@
 #include <iostream>
 #include <cstdlib>
-#include <sys/socket.h>
-#include <netlink/netlink.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
 
 using namespace std;
 
-#define MY_MSG_TYPE (0x10 + 2)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <stdlib.h>
+#include <string.h>
+#define NETLINK_NITRO 17
+#define MAX_PAYLOAD 2048
 
 int main()
 {
 	cout << endl;
 
-	struct nl_sock *nls;
-    char msg[] = { 0xde, 0xad, 0xbe, 0xef, 0x90, 0x0d, 0xbe, 0xef };
-    int ret;
+	struct sockaddr_nl s_nladdr, d_nladdr;
+	struct msghdr msg ;
+	struct nlmsghdr *nlh=NULL ;
+	struct iovec iov;
+	int fd=socket(AF_NETLINK ,SOCK_RAW , NETLINK_NITRO );
 
-    nls = nl_socket_alloc();
-    if (!nls) {
-        printf("bad nl_socket_alloc\n");
-        return EXIT_FAILURE;
-    }
+	/* source address */
+	memset(&s_nladdr, 0 ,sizeof(s_nladdr));
+	s_nladdr.nl_family= AF_NETLINK ;
+	s_nladdr.nl_pad=0;
+	s_nladdr.nl_pid = getpid();
+	bind(fd, (struct sockaddr*)&s_nladdr, sizeof(s_nladdr));
 
-    ret = nl_connect(nls, NETLINK_USERSOCK);
-    if (ret < 0) {
-        nl_perror(ret, "nl_connect");
-        nl_socket_free(nls);
-        return EXIT_FAILURE;
-    }
+	/* destination address */
+	memset(&d_nladdr, 0 ,sizeof(d_nladdr));
+	d_nladdr.nl_family= AF_NETLINK ;
+	d_nladdr.nl_pad=0;
+	d_nladdr.nl_pid = 0; /* destined to kernel */
 
-    ret = nl_send_simple(nls, MY_MSG_TYPE, 0, msg, sizeof(msg));
-    if (ret < 0) {
-        nl_perror(ret, "nl_send_simple");
-        nl_close(nls);
-        nl_socket_free(nls);
-        return EXIT_FAILURE;
-    } else {
-        printf("sent %d bytes\n", ret);
-    }
+	/* Fill the netlink message header */
+	nlh = (struct nlmsghdr *)malloc(100);
+	memset(nlh , 0 , 100);
+	strcpy(NLMSG_DATA(nlh), " Mr. Kernel, Are you ready ?" );
+	nlh->nlmsg_len =100;
+	nlh->nlmsg_pid = getpid();
+	nlh->nlmsg_flags = 1;
+	nlh->nlmsg_type = 0;
 
-    nl_close(nls);
-    nl_socket_free(nls);
+	/*iov structure */
+
+	iov.iov_base = (void *)nlh;
+	iov.iov_len = nlh->nlmsg_len;
+
+	/* msg */
+	memset(&msg,0,sizeof(msg));
+	msg.msg_name = (void *) &d_nladdr ;
+	msg.msg_namelen=sizeof(d_nladdr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	sendmsg(fd, &msg, 0);
+
+	close(fd);
 
 	//for(int i=0; i<=10; i++)
 	//{
