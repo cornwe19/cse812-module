@@ -40,7 +40,7 @@ int main()
 	/* Fill the netlink message header */
 	nlh = (struct nlmsghdr *)malloc(100);
 	memset(nlh , 0 , 100);
-	strcpy(NLMSG_DATA(nlh), " Mr. Kernel, Are you ready ?" );
+	strcpy((char*)(NLMSG_DATA(nlh)), " Mr. Kernel, Are you ready ?" );
 	nlh->nlmsg_len =100;
 	nlh->nlmsg_pid = getpid();
 	nlh->nlmsg_flags = 1;
