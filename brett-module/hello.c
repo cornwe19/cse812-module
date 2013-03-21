@@ -70,6 +70,24 @@ static void netlink_test()
 
   nl_sk = netlink_kernel_create(&init_net,NETLINK_NITRO,0, nl_data_ready,NULL, THIS_MODULE);
 
+  sturct sk_buff *skb = NULL;
+  struct nlmsghdr *nlh;
+
+  skb=alloc_skb(NLMSG_SPACE(MAX_PAYLOAD),GFP_KERNEL);
+  nlh = (struct nlmsghdr *)skb->data;
+  nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
+  nlh->nlmsg_pid = 0;  /* from kernel */
+  nlh->nlmsg_flags = 0;
+  strcpy(NLMSG_DATA(nlh), "Greeting from kernel!");
+  /* sender is in group 1<<0 */
+  NETLINK_CB(skb).groups = 1;
+  NETLINK_CB(skb).pid = 0;  /* from kernel */
+  NETLINK_CB(skb).dst_pid = 0;  /* multicast */
+  /* to mcast group 1<<0 */
+  NETLINK_CB(skb).dst_groups = 1;
+
+  /*multicast the message to all listening processes*/
+  netlink_broadcast(nl_sk, skb, 0, 1, GFP_KERNEL);
 }
 
 static int __devinit snd_simple_create( struct pci_dev *pci, const struct pci_device_id *pci_id ) {

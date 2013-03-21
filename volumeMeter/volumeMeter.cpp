@@ -59,6 +59,9 @@ int main()
 	msg.msg_iovlen = 1;
 	sendmsg(fd, &msg, 0);
 
+	recvmsg(fd, &msg, 0);
+    printf(" Received message payload: %s\n",
+           NLMSG_DATA(nlh));
 	close(fd);
 
 	//for(int i=0; i<=10; i++)
