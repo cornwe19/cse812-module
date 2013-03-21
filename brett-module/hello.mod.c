@@ -18,15 +18,12 @@ static const struct modversion_info ____versions[]
 __used
 __attribute__((section("__versions"))) = {
 	{ 0x8479aeaa, "module_layout" },
-	{ 0x358acced, "mutex_unlock" },
-	{ 0x1d4cab52, "netlink_rcv_skb" },
-	{ 0x6383fc37, "mutex_lock" },
 	{ 0x98526078, "netlink_kernel_create" },
 	{ 0x40918e5e, "init_net" },
 	{ 0x699e337c, "__pci_register_driver" },
 	{ 0x3a322124, "dev_set_drvdata" },
 	{ 0xc1d9645b, "pci_unregister_driver" },
-	{ 0x6d42572, "netlink_kernel_release" },
+	{ 0x24b73462, "sock_release" },
 	{ 0xea147363, "printk" },
 };
 

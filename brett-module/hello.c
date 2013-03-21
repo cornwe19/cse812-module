@@ -9,11 +9,11 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-# include <linux/sched.h>
-# include <linux/netlink.h>
-# include <net/sock.h>
-# include <net/net_namespace.h>
-# define NETLINK_NITRO 17
+#include <linux/sched.h>
+#include <linux/netlink.h>
+#include <net/sock.h>
+#include <net/net_namespace.h>
+#define NETLINK_NITRO 17
 
 static struct sock *nl_sk = NULL;
 

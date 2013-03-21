@@ -602,10 +602,42 @@ deps_/home/lesnaubr/cse812-module/brett-module/hello.o := \
   include/linux/uio.h \
   include/sound/initval.h \
     $(wildcard include/config/pnp.h) \
+  include/linux/netlink.h \
+  include/linux/socket.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/socket.h \
+  include/asm-generic/socket.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/sockios.h \
+  include/asm-generic/sockios.h \
+  include/linux/sockios.h \
+  include/linux/skbuff.h \
+    $(wildcard include/config/nf/conntrack.h) \
+    $(wildcard include/config/bridge/netfilter.h) \
+    $(wildcard include/config/xfrm.h) \
+    $(wildcard include/config/net/sched.h) \
+    $(wildcard include/config/net/cls/act.h) \
+    $(wildcard include/config/ipv6/ndisc/nodetype.h) \
+    $(wildcard include/config/net/dma.h) \
+    $(wildcard include/config/network/secmark.h) \
+  include/linux/net.h \
+  include/linux/random.h \
+  include/linux/irqnr.h \
+  include/linux/fcntl.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/fcntl.h \
+  include/asm-generic/fcntl.h \
+  include/linux/textsearch.h \
+  include/net/checksum.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/uaccess.h \
+    $(wildcard include/config/x86/wp/works/ok.h) \
+    $(wildcard include/config/x86/intel/usercopy.h) \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/uaccess_64.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/checksum.h \
+  /usr/src/linux-2.6.32.5/arch/x86/include/asm/checksum_64.h \
+  include/linux/dmaengine.h \
+    $(wildcard include/config/dma/engine.h) \
+    $(wildcard include/config/async/tx/dma.h) \
+    $(wildcard include/config/async/tx/disable/channel/switch.h) \
   include/net/sock.h \
     $(wildcard include/config/net/ns.h) \
-    $(wildcard include/config/xfrm.h) \
-    $(wildcard include/config/net/dma.h) \
   include/linux/list_nulls.h \
   include/linux/netdevice.h \
     $(wildcard include/config/dcb.h) \
@@ -626,39 +658,8 @@ deps_/home/lesnaubr/cse812-module/brett-module/hello.o := \
     $(wildcard include/config/net/dsa/tag/trailer.h) \
     $(wildcard include/config/netpoll/trap.h) \
   include/linux/if.h \
-  include/linux/socket.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/socket.h \
-  include/asm-generic/socket.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/sockios.h \
-  include/asm-generic/sockios.h \
-  include/linux/sockios.h \
   include/linux/hdlc/ioctl.h \
   include/linux/if_ether.h \
-  include/linux/skbuff.h \
-    $(wildcard include/config/nf/conntrack.h) \
-    $(wildcard include/config/bridge/netfilter.h) \
-    $(wildcard include/config/net/sched.h) \
-    $(wildcard include/config/net/cls/act.h) \
-    $(wildcard include/config/ipv6/ndisc/nodetype.h) \
-    $(wildcard include/config/network/secmark.h) \
-  include/linux/net.h \
-  include/linux/random.h \
-  include/linux/irqnr.h \
-  include/linux/fcntl.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/fcntl.h \
-  include/asm-generic/fcntl.h \
-  include/linux/textsearch.h \
-  include/net/checksum.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/uaccess.h \
-    $(wildcard include/config/x86/wp/works/ok.h) \
-    $(wildcard include/config/x86/intel/usercopy.h) \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/uaccess_64.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/checksum.h \
-  /usr/src/linux-2.6.32.5/arch/x86/include/asm/checksum_64.h \
-  include/linux/dmaengine.h \
-    $(wildcard include/config/dma/engine.h) \
-    $(wildcard include/config/async/tx/dma.h) \
-    $(wildcard include/config/async/tx/disable/channel/switch.h) \
   include/linux/if_packet.h \
   include/linux/ethtool.h \
   include/net/net_namespace.h \
@@ -775,7 +776,6 @@ deps_/home/lesnaubr/cse812-module/brett-module/hello.o := \
   include/net/dst.h \
     $(wildcard include/config/net/cls/route.h) \
   include/linux/rtnetlink.h \
-  include/linux/netlink.h \
   include/linux/if_link.h \
   include/linux/if_addr.h \
   include/linux/neighbour.h \
