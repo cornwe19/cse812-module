@@ -3,6 +3,8 @@
 #include <linux/init.h>
 #include <linux/pci.h>
 #include <linux/slab.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <sound/core.h>
 #include <sound/initval.h>
 
@@ -59,10 +61,87 @@ static char* device_id_names[] = {
     "DEVICE_ALI"
 };
 
-static int __devinit snd_simple_create( struct pci_dev *pci, const struct pci_device_id *pci_id ) {
+static irqreturn_t snd_simple_interrupt( int irq, void *priv_data ) {
+    print812( "Getting an interrupt" );
+
+    return IRQ_HANDLED;
+}
+
+struct simplechip {
+    struct snd_card *card;
+};
+
+static int simplechip_free( struct simplechip *chip ) {
+    // TODO: Free the chip
+
+    return 0;
+}
+
+static int simplechip_dev_free( struct snd_device *device ) {
+    return simplechip_free( (struct simplechip *)device->device_data );
+}
+
+static int  __devinit create_chip( struct snd_card *card, struct pci_dev *pci, struct simplechip **rchip ) {
+    struct simplechip *chip;
+    int                err;
+    static struct snd_device_ops ops = {
+        .dev_free = simplechip_dev_free,
+    };
+
+    *rchip = NULL;
+
+    chip = kzalloc( sizeof(*chip), GFP_KERNEL );
+    if ( chip == NULL ) {
+        return -ENOMEM;
+    }
+
+    chip->card = card;
+
+    err = snd_device_new( card, SNDRV_DEV_LOWLEVEL, chip, &ops );
+    if ( err < 0 ) {
+        print812( "Failed to set card device (%d)", err );
+
+        simplechip_free( chip );
+
+        return err;
+    }
+
+    snd_card_set_dev( card, &pci->dev );
+
+    *rchip = chip;
+    return 0;
+}
+
+static int __devinit snd_simple_probe( struct pci_dev *pci, const struct pci_device_id *pci_id ) {
+    int err = 0;
+    struct snd_card *card;
+    struct simplechip *chip;
+
     print812( "In device constructor with IRQ %d", pci->irq );
-  
     print812( "Using device ID %ld (%s)", pci_id->driver_data, device_id_names[pci_id->driver_data] );   
+
+    err = snd_card_create( SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1, THIS_MODULE, 0, &card );
+    if ( err < 0 ) {
+        print812( "Failed to create soundcard (%d)", err );
+        return err;
+    }
+  
+    err = create_chip( card, pci, &chip );
+    if ( err < 0 ) {
+        print812( "Failed to create chip (%d)", err );
+
+        return err;
+    }
+
+    // TODO: fix the null ptr here. Need some data to fill up
+    err = request_irq( pci->irq, snd_simple_interrupt, IRQF_SHARED, "Simple Card", NULL );
+    if ( err < 0 ) {
+        print812( "Failed to get IRQ channel (%d)", err );
+
+        snd_card_free( card );
+
+        return err;
+    }
 
     return 0;
 }
@@ -78,21 +157,23 @@ static void __devexit snd_simple_exit( struct pci_dev *pci ) {
 static struct pci_driver driver = { 
    .name = "Simple Driver",
    .id_table = intel_dev_ids,
-   .probe = snd_simple_create,
+   .probe = snd_simple_probe,
    // Wrap .remove to turn the exit function into a NULL pointer if
    // the driver is compiled into the kernel
    .remove = __devexit_p( snd_simple_exit ) 
 };
 
 static int __init hello_init( void ) {
+    int err = 0;
+    
     print812( "Initializing the module." );
 
-    int result = pci_register_driver( &driver );
-    if ( result < 0 ) {
-        print812( "Failed to register device - errno: %d", result );
-        return result;
+    err = pci_register_driver( &driver );
+    if ( err < 0 ) {
+        print812( "Failed to register device - errno: %d", err );
+        return err;
     } else {
-        print812( "Registered OK with code %d.", result );
+        print812( "Registered OK with code %d.", err );
     }
 
     return 0;
