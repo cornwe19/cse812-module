@@ -6,9 +6,16 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
-#include <net/sock.h>
-#include <net/netlink.h>
+# include <linux/sched.h>
+# include <linux/netlink.h>
+# include <net/sock.h>
+# include <net/net_namespace.h>
+# define NETLINK_NITRO 17
+
+static struct sock *nl_sk = NULL;
 
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
@@ -43,36 +50,26 @@ static struct pci_device_id snd_simple_ids[] =  {
 	{ 0, }
 };
 
-static struct sock *my_nl_sock;
-#define MY_MSG_TYPE (0x10 + 2)
-
-DEFINE_MUTEX(my_mutex);
-
-static int
-my_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+static void nl_data_ready (struct sk_buff *skb)
 {
-    int type;
-    char *data;
+  struct nlmsghdr *nlh = NULL;
 
-    type = nlh->nlmsg_type;
-    if (type != MY_MSG_TYPE) {
-        printk("%s: expect %#x got %#x\n", __func__, MY_MSG_TYPE, type);
-        return -EINVAL;
-    }
+  if(skb == NULL) 
+  {
+    printk("skb is NULL \n");
+    return ;
+  }
 
-    data = NLMSG_DATA(nlh);
-    printk("%s: %02x %02x %02x %02x %02x %02x %02x %02x\n", __func__,
-            data[0], data[1], data[2], data[3],
-            data[4], data[5], data[6], data[7]);
-    return 0;
+  nlh = (struct nlmsghdr *)skb->data;
+  printk(KERN_INFO "%s: received netlink message payload: %s\n", __FUNCTION__, NLMSG_DATA(nlh));
+
 }
 
-static void
-my_nl_rcv_msg(struct sk_buff *skb)
+static void netlink_test()
 {
-    mutex_lock(&my_mutex);
-    netlink_rcv_skb(skb, &my_rcv_msg);
-    mutex_unlock(&my_mutex);
+
+  nl_sk = netlink_kernel_create(&init_net,NETLINK_NITRO,0, nl_data_ready,NULL, THIS_MODULE);
+
 }
 
 static int __devinit snd_simple_create( struct pci_dev *pci, const struct pci_device_id *pci_id ) {
@@ -107,13 +104,7 @@ static int __init hello_init( void ) {
         return result;
     } else {
         print812( "Registered OK with code %d.", result );
-        
-        my_nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, 0, my_nl_rcv_msg, NULL, THIS_MODULE);
-        if (!my_nl_sock) 
-        {
-          printk(KERN_ERR "%s: receive handler registration failed\n", __func__);
-          return -ENOMEM;
-        }
+        netlink_test();
     }
 
     return 0;
@@ -122,10 +113,7 @@ static int __init hello_init( void ) {
 static void __exit hello_exit( void ) {
     printk( "<1>812 Unregistering the module" );
 
-    if (my_nl_sock) 
-    {
-      netlink_kernel_release(my_nl_sock);
-    }
+    sock_release(nl_sk->sk_socket);
 
     pci_unregister_driver( &driver );
 }
