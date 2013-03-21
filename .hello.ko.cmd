@@ -1,0 +1,1 @@
+cmd_/home/lesnaubr/cse812-module/hello.ko := ld -r -m elf_x86_64 -T /usr/src/linux-2.6.32.5/scripts/module-common.lds --build-id -o /home/lesnaubr/cse812-module/hello.ko /home/lesnaubr/cse812-module/hello.o /home/lesnaubr/cse812-module/hello.mod.o
