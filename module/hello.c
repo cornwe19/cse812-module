@@ -43,21 +43,35 @@ static int hello_init( void ) {
 }
 
 int key_open( struct inode *inode, struct file *filp ) {
+    print812( "Received an open" );
 
     return 0;
 }
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
+    char *debug_stmt = "Keylogger debug\n";
+    unsigned length = strlen( debug_stmt );
     
-    return 0;
+    print812( "Reading from device" );
+
+
+    copy_to_user( buf, debug_stmt, length );
+    
+    if ( *f_pos == 0 ) {
+        *f_pos += length;
+        return length;
+    } else {
+        return 0;
+    }
 }
 
 int key_release( struct inode *inode, struct file *filp ) {
+    print812( "In release method" );
 
     return 0;
 }
 
 static void hello_exit( void ) {
-    printk( "<1> Unregistering the module" );
+    print812( "Unregistering the module" );
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
 }
