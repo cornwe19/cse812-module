@@ -6,10 +6,8 @@ all:
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) modules
 
 install:
-	insmod hello.ko
-
-dev:
 	mknod $(NODE) c 60 0
+	insmod hello.ko
 
 uninstall:
 	rmmod hello
@@ -17,3 +15,11 @@ uninstall:
 
 clean:
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) clean
+
+i:
+	rmmod hello
+	rm -rf $(NODE)
+	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) clean
+	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) modules
+	mknod $(NODE) c 60 0
+	insmod hello.ko
