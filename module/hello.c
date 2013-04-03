@@ -89,7 +89,15 @@ struct file* file_open(const char* path, int flags, int rights) {
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, 
                         char *fp, int count)
 {   
-    printk("%s", cp);
+    //print812("%c", fp[0]);
+    //print812("%d ", count);
+    if(count > 0)
+    {
+        //We need to copy the correct number of characters from cp based on count
+        print812("%d : %c", count, cp[0]);
+    }
+
+    //print812("%s", cp);
     //logging(tty, cp, count);    //log inputs
 
     /* call the original receive_buf */
