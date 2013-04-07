@@ -2,18 +2,20 @@
 #include <stdlib.h>
 #include <sys/select.h>
 #include <signal.h>
+#include <string.h>
 
 #define CONSOLE 0
+#define BUF_SIZE 32
 
 FILE *fp;
+char* read_buf;
 
 void io_ready( int signum ) {
-    printf( "Got signal %d\n", signum );
-    
-    char buffer[32];
-    fread( buffer, 1, 32, fp );
+    rewind( fp );
+    memset( read_buf, 0, BUF_SIZE );
+    fread( read_buf, 1, BUF_SIZE, fp );
 
-    printf( "Reading %s from keylogger\n", buffer );
+    printf( "Reading %s from keylogger\n", read_buf );
 }
 
 int main( int argv, char **argc ) {
@@ -28,6 +30,12 @@ int main( int argv, char **argc ) {
 
     fprintf( fp, "%d", getpid() );
     fflush( fp );
+
+    read_buf = calloc( BUF_SIZE, sizeof(char) );
+    if ( read_buf == NULL ) {
+        perror( "Failed to allocate file read buffer." );
+        return -1;
+    }
 
     signal( SIGIO, io_ready ); // Register for IO signals
 
@@ -45,6 +53,10 @@ int main( int argv, char **argc ) {
                 }
             }
         }
+    }
+
+    if ( read_buf != NULL ) {
+        free( read_buf );
     }
 
     fprintf( fp, "%d", -1 );
