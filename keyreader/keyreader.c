@@ -39,6 +39,8 @@ int main( int argv, char **argc ) {
 
     signal( SIGIO, io_ready ); // Register for IO signals
 
+    printf( "Listening for keypresses. Press 'q' to exit.\n" );
+
     FD_ZERO( &readset );
     
     while ( !shouldExit ) {
