@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/select.h>
 #include <signal.h>
 #include <string.h>
@@ -31,7 +32,7 @@ int main( int argv, char **argc ) {
     fprintf( fp, "%d", getpid() );
     fflush( fp );
 
-    read_buf = calloc( BUF_SIZE, sizeof(char) );
+    read_buf = (char*) calloc( BUF_SIZE, sizeof(char) );
     if ( read_buf == NULL ) {
         perror( "Failed to allocate file read buffer." );
         return -1;
