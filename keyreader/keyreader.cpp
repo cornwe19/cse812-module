@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define CONSOLE 0
-#define BUF_SIZE 32
+#define BUF_SIZE 1024
 
 FILE *fp;
 char* read_buf;
