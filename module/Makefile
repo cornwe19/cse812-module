@@ -6,7 +6,7 @@ all:
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) modules
 
 install:
-	mknod $(NODE) c 60 0
+	mknod $(NODE) c 65 0
 	chmod 666 $(NODE)
 	insmod hello.ko
 
@@ -22,5 +22,5 @@ i:
 	rm -rf $(NODE)
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) clean
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) modules
-	mknod $(NODE) c 60 0
+	mknod $(NODE) c 65 0
 	insmod hello.ko
