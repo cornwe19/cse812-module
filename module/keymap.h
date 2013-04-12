@@ -4,7 +4,7 @@
 #define MULTIMEDIA 0
 
 static char* KEYMAP[] = {
-    [0x01] = "Esc",
+    [0x01] = "[Esc]",
     [0x02] = "! 1",
     [0x03] = "@ 2",
     [0x04] = "# 3",
@@ -17,8 +17,8 @@ static char* KEYMAP[] = {
     [0x0B] = ") 0",
     [0x0C] = "_ -",
     [0x0D] = "+ =",
-    [0x0E] = "Back Space",
-    [0x0F] = "Tab",
+    [0x0E] = "[Bksp]",
+    [0x0F] = "[Tab]",
     [0x10] = "Q",
     [0x11] = "W",
     [0x12] = "E",
@@ -29,10 +29,10 @@ static char* KEYMAP[] = {
     [0x17] = "I",
     [0x18] = "O",
     [0x19] = "P",
-    [0x1A] = "{ [",
-    [0x1B] = "} ]",
-    [0x1C] = "Enter",
-    [0x1D] = "Ctrl",
+    [0x1A] = "[{ []",
+    [0x1B] = "[} ]]",
+    [0x1C] = "[Enter]",
+    [0x1D] = "[Ctrl]",
     [0x1E] = "A",
     [0x1F] = "S",
     [0x20] = "D",
@@ -42,12 +42,12 @@ static char* KEYMAP[] = {
     [0x24] = "J",
     [0x25] = "K",
     [0x26] = "L",
-    [0x27] = ": ;",
-    [0x28] = "\" '",
-    [0x29] = "~ `",
-    [0x2A] = "Shift",
-    [0x2B] = "| \\",
-    [0x2B] = "(INT 2)",
+    [0x27] = "[: ;]",
+    [0x28] = "[\" ']",
+    [0x29] = "[~ `]",
+    [0x2A] = "[Shift]",
+    [0x2B] = "[| \\]",
+    [0x2B] = "[INT 2]",
     [0x2C] = "Z",
     [0x2D] = "X",
     [0x2E] = "C",
@@ -59,78 +59,78 @@ static char* KEYMAP[] = {
     [0x34] = "> .",
     [0x35] = "? /",
     [0x35] = "/ KP",
-    [0x36] = "Shift",
-    [0x37] = "PrtSc",
-    [0x54] = "PrtSc",
-    [0x38] = "Alt",
-    [0x39] = "Space",
-    [0x3A] = "Caps Lock",
-    [0x3B] = "F1",
-    [0x3C] = "F2",
-    [0x3D] = "F3",
-    [0x3E] = "F4",
-    [0x3F] = "F5",
-    [0x40] = "F6",
-    [0x41] = "F7",
-    [0x42] = "F8",
-    [0x43] = "F9",
-    [0x44] = "F10",
-    [0x45] = "Num Lock",
-    [0x46] = "Scroll Lock",
-    [0x47] = "Home",
-    [0x48] = "Up",
-    [0x49] = "PgUp",
+    [0x36] = "[Shift]",
+    [0x37] = "[PrtSc]",
+    [0x54] = "[PrtSc]",
+    [0x38] = "[Alt]",
+    [0x39] = "[Space]",
+    [0x3A] = "[CapsLock]",
+    [0x3B] = "[F1]",
+    [0x3C] = "[F2]",
+    [0x3D] = "[F3]",
+    [0x3E] = "[F4]",
+    [0x3F] = "[F5]",
+    [0x40] = "[F6]",
+    [0x41] = "[F7]",
+    [0x42] = "[F8]",
+    [0x43] = "[F9]",
+    [0x44] = "[F10]",
+    [0x45] = "[Num Lock]",
+    [0x46] = "[Scroll Lock]",
+    [0x47] = "[Home]",
+    [0x48] = "[Up]",
+    [0x49] = "[PgUp]",
     [0x4A] = "-",
-    [0x4B] = "Left",
-    [0x4C] = "KP",
-    [0x4D] = "Right",
+    [0x4B] = "[Left]",
+    [0x4C] = "[KP]",
+    [0x4D] = "[Right]",
     [0x4E] = "+",
-    [0x4F] = "End ",
-    [0x50] = "Down",
-    [0x51] = "PgDn",
-    [0x52] = "Ins",
-    [0x53] = "Del",
-    [0x54] = "SysRq",
-    [0x56] = "(INT 1)",
-    [0x57] = "F11",
-    [0x58] = "F12",
-    [0x5B] = "Win L",
-    [0x5C] = "Win R",
-    [0x5D] = "WinMenu",
-    [0x69] = "Left",
-    [0x6A] = "Right",
-    [0x67] = "Up",
-    [0x6C] = "Down",
-    [0x70] = "katakana",
-    [0x73] = "(INT 3)",
-    [0x77] = "furigana",
-    [0x79] = "kanji",
-    [0x7B] = "hiragana",
-    [0x7D] = "(INT 4)",
-    [0x7E] = "(INT 5)",
+    [0x4F] = "[End]",
+    [0x50] = "[Down]",
+    [0x51] = "[PgDn]",
+    [0x52] = "[Ins]",
+    [0x53] = "[Del]",
+    [0x54] = "[SysRq]",
+    [0x56] = "[INT 1]",
+    [0x57] = "[F11]",
+    [0x58] = "[F12]",
+    [0x5B] = "[Win L]",
+    [0x5C] = "[Win R]",
+    [0x5D] = "[WinMenu]",
+    [0x69] = "[Left]",
+    [0x6A] = "[Right]",
+    [0x67] = "[Up]",
+    [0x6C] = "[Down]",
+    [0x70] = "[katakana]",
+    [0x73] = "[INT 3]",
+    [0x77] = "[furigana]",
+    [0x79] = "[kanji]",
+    [0x7B] = "[hiragana]",
+    [0x7D] = "[INT 4]",
+    [0x7E] = "[INT 5]",
 #if MULTIMEDIA
-    [0x5E] = "Power",
-    [0x5F] = "Sleep",
-    [0x63] = "Wake",
-    [0x20] = "Mute",
-    [0x30] = "Volume Up",
-    [0x2E] = "Volume Down",
-    [0x17] = "Cut",
-    [0x18] = "Copy",
-    [0x0A] = "Paste",
-    [0x3B] = "Help",
-    [0x08] = "Undo",
-    [0x07] = "Redo",
-    [0x22] = "Play",
-    [0x24] = "Stop",
-    [0x10] = "Skip Back",
-    [0x19] = "Skip Fwd",
-    [0x2C] = "Eject",
-    [0x1E] = "Mail",
-    [0x32] = "Web",
-    [0x3C] = "Music",
-    [0x64] = "Pictures",
-    [0x6D] = "Video"
+    [0x5E] = "[Power]",
+    [0x5F] = "[Sleep]",
+    [0x63] = "[Wake]",
+    [0x20] = "[Mute]",
+    [0x30] = "[Volume Up]",
+    [0x2E] = "[Volume Down]",
+    [0x17] = "[Cut]",
+    [0x18] = "[Copy]",
+    [0x0A] = "[Paste]",
+    [0x3B] = "[Help]",
+    [0x08] = "[Undo]",
+    [0x07] = "[Redo]",
+    [0x22] = "[Play]",
+    [0x24] = "[Stop]",
+    [0x10] = "[Skip Back]",
+    [0x19] = "[Skip Fwd]",
+    [0x2C] = "[Eject]",
+    [0x1E] = "[Mail]",
+    [0x32] = "[Web]",
+    [0x3C] = "[Music]",
+    [0x64] = "[Pictures]",
+    [0x6D] = "[Video]"
 #endif
 };
 
@@ -164,7 +164,7 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
                 return "[^D]";
                 break;
             case 0x0D:  //^M
-                return "[RET]";
+                return "[Enter]";
                 break;
             case 0x05:  //^E
                 return "[^E]";
@@ -176,7 +176,7 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
                 return "[^G]";
                 break;
             case 0x09:  //TAB - ^I
-                return "[TAB]";
+                return "[Tab]";
                 break;
             case 0x0b:  //^K
                 return "[^K]";
@@ -237,10 +237,10 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
                 break;
             case BACK_SPACE_CHAR1:
             case BACK_SPACE_CHAR2:
-                return "[BKSP]";
+                return "[Bksp]";
                 break;
             case ESC_CHAR:  //ESC
-                return "[ESC]";
+                return "[Esc]";
                 break;
             default:
                 return cp;
@@ -256,179 +256,177 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
         } 
         else // special key
         {   
-            //return "[SPECIAL]";
-
             switch (count) 
             {
                 case 2:
                     switch (cp[1]) {
                         case '\'':
-                            return "[ALT-\']";
+                            return "[Alt-\']";
                             break;
                         case ',':
-                            return "[ALT-,]";
+                            return "[Alt-,]";
                             break;
                         case '-':
-                            return "[ALT--]";
+                            return "[Alt--]";
                             break;
                         case '.':
-                            return "[ALT-.]";
+                            return "[Alt-.]";
                             break;
                         case '/':
-                            return "[ALT-/]";
+                            return "[Alt-/]";
                             break;
                         case '0':
-                            return "[ALT-0]";
+                            return "[Alt-0]";
                             break;
                         case '1':
-                            return "[ALT-1]";
+                            return "[Alt-1]";
                             break;
                         case '2':
-                            return "[ALT-2]";
+                            return "[Alt-2]";
                             break;
                         case '3':
-                            return "[ALT-3]";
+                            return "[Alt-3]";
                             break;
                         case '4':
-                            return "[ALT-4]";
+                            return "[Alt-4]";
                             break;
                         case '5':
-                            return "[ALT-5]";
+                            return "[Alt-5]";
                             break;
                         case '6':
-                            return "[ALT-6]";
+                            return "[Alt-6]";
                             break;
                         case '7':
-                            return "[ALT-7]";
+                            return "[Alt-7]";
                             break;
                         case '8':
-                            return "[ALT-8]";
+                            return "[Alt-8]";
                             break;
                         case '9':
-                            return "[ALT-9]";
+                            return "[Alt-9]";
                             break;
                         case ';':
-                            return "[ALT-;]";
+                            return "[Alt-;]";
                             break;
                         case '=':
-                            return "[ALT-=]";
+                            return "[Alt-=]";
                             break;
                         case '[':
-                            return "[ALT-[]";
+                            return "[Alt-[]";
                             break;
                         case '\\':
-                            return "[ALT-\\]";
+                            return "[Alt-\\]";
                             break;
                         case ']':
-                            return "[ALT-]]";
+                            return "[Alt-]]";
                             break;
                         case '`':
-                            return "[ALT-`]";
+                            return "[Alt-`]";
                             break;
                         case 'a':
-                            return "[ALT-A]";
+                            return "[Alt-A]";
                             break;
                         case 'b':
-                            return "[ALT-B]";
+                            return "[Alt-B]";
                             break;
                         case 'c':
-                            return "[ALT-C]";
+                            return "[Alt-C]";
                             break;
                         case 'd':
-                            return "[ALT-D]";
+                            return "[Alt-D]";
                             break;
                         case 'e':
-                            return "[ALT-E]";
+                            return "[Alt-E]";
                             break;
                         case 'f':
-                            return "[ALT-F]";
+                            return "[Alt-F]";
                             break;
                         case 'g':
-                            return "[ALT-G]";
+                            return "[Alt-G]";
                             break;
                         case 'h':
-                            return "[ALT-H]";
+                            return "[Alt-H]";
                             break;
                         case 'i':
-                            return "[ALT-I]";
+                            return "[Alt-I]";
                             break;
                         case 'j':
-                            return "[ALT-J]";
+                            return "[Alt-J]";
                             break;
                         case 'k':
-                            return "[ALT-K]";
+                            return "[Alt-K]";
                             break;
                         case 'l':
-                            return "[ALT-L]";
+                            return "[Alt-L]";
                             break;
                         case 'm':
-                            return "[ALT-M]";
+                            return "[Alt-M]";
                             break;
                         case 'n':
-                            return "[ALT-N]";
+                            return "[Alt-N]";
                             break;
                         case 'o':
-                            return "[ALT-O]";
+                            return "[Alt-O]";
                             break;
                         case 'p':
-                            return "[ALT-P]";
+                            return "[Alt-P]";
                             break;
                         case 'q':
-                            return "[ALT-Q]";
+                            return "[Alt-Q]";
                             break;
                         case 'r':
-                            return "[ALT-R]";
+                            return "[Alt-R]";
                             break;
                         case 's':
-                            return "[ALT-S]";
+                            return "[Alt-S]";
                             break;
                         case 't':
-                            return "[ALT-T]";
+                            return "[Alt-T]";
                             break;
                         case 'u':
-                            return "[ALT-U]";
+                            return "[Alt-U]";
                             break;
                         case 'v':
-                            return "[ALT-V]";
+                            return "[Alt-V]";
                             break;
                         case 'x':
-                            return "[ALT-X]";
+                            return "[Alt-X]";
                             break;
                         case 'y':
-                            return "[ALT-Y]";
+                            return "[Alt-Y]";
                             break;
                         case 'z':
-                            return "[ALT-Z]";
+                            return "[Alt-Z]";
                             break;
                     }
                     break;
                 case 3:
-                    return "[SPECIAL]";
+                    return "[Special]";
                     switch (cp[2]) {
                         case 68:
                             // Left: 27 91 68
-                            return "[LEFT]";
+                            return "[Left]";
                             break;
                         case 67:
                             // Right: 27 91 67
-                            return "[RIGHT]";
+                            return "[Right]";
                             break;
                         case 65:
                             // Up: 27 91 65
-                            return "[UP]";
+                            return "[Up]";
                             break;
                         case 66:
                             // Down: 27 91 66
-                            return "[DOWN]";
+                            return "[Down]";
                             break;
                         case 80:
                             // Pause/Break: 27 91 80 
-                            return "[BREAK]";
+                            return "[Break]";
                             break;
                     }
                     break;
                 case 4:
-                    return "[SPECIAL]";
+                    return "[Special]";
                     switch (cp[3]) {
                         case 65:
                             // F1: 27 91 91 65
@@ -454,34 +452,34 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
                             switch (cp[2]) {
                                 case 53:
                                     // PgUp: 27 91 53 126
-                                    return "[PgUP]";
+                                    return "[PgUp]";
                                     break;
                                 case 54:
                                     // PgDown: 27 91 54 126
-                                    return "[PgDOWN]";
+                                    return "[PgDown]";
                                     break;
                                 case 49:
                                     // Home: 27 91 49 126
-                                    return "[HOME]";
+                                    return "[Home]";
                                     break;
                                 case 52:
                                     // End: 27 91 52 126
-                                    return "[END]";
+                                    return "[End]";
                                     break;
                                 case 50:
                                     // Insert: 27 91 50 126
-                                    return "[INS]";
+                                    return "[Ins]";
                                     break;
                                 case 51:
                                     // Delete: 27 91 51 126
-                                    return "[DEL]";
+                                    return "[Del]";
                                     break;
                             }
                             break;
                     }
                     break;
                 case 5:
-                    return "[SPECIAL]";
+                    return "[Special]";
                     if (cp[2] == 50)
                         switch (cp[3]) {
                             case 48:
