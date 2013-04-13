@@ -29,7 +29,9 @@ int main( int argv, char **argc ) {
         return -1;
     }
 
-    fprintf( fp, "%d", getpid() );
+    pid_t this_pid = getpid();
+
+    fprintf( fp, "%d", this_pid);
     fflush( fp );
 
     read_buf = (char*) calloc( BUF_SIZE, sizeof(char) );
@@ -58,12 +60,32 @@ int main( int argv, char **argc ) {
         }
     }
 
+    //fp = fopen( "/dev/keylog", "r+" );
+    //if ( fp == NULL ) {
+    //    perror( "Failed to open keylog file" );
+    //    return -1;
+   // }
+
+    //fprintf( fp, "%d", this_pid );
+    //fflush( fp );
+
     if ( read_buf != NULL ) {
         free( read_buf );
     }
 
-    fprintf( fp, "%d", -1 );
+    fprintf( fp, "%d", this_pid );
+    fflush( fp );
     fclose( fp );
+
+    //fp = fopen( "/dev/keylog", "r+" );
+    //if ( fp == NULL ) {
+    //    perror( "Failed to open keylog file" );
+    //    return -1;
+    //}
+
+    //fprintf( fp, "%d", getpid() );
+    //fflush( fp );
+    //fclose( fp );
 
     return 0;
 }
