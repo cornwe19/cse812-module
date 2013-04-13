@@ -1,6 +1,6 @@
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/kernel.h>   /* printk() */
+
 #include <linux/slab.h>     /* kmalloc() */
 #include <linux/fs.h>       /* everything... */
 #include <linux/errno.h>    /* error codes */
@@ -72,53 +72,34 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
         return 0;
     }
 
-    if(pid_buffer[0] == '-') {
-        if(registered_proc_count < 0) {
-            print812( "There are not any processes to unregister.");
-            return 0;
-        }
+    pid_t registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
+    if ( registered_pid == 0 && endptr == pid_buffer ) {
+        print812( "Failed to parse pid" );
+        return 0;
+    } 
 
-        if(count < 2) {
-            print812( "A valid process id must be provided." );
-            return 0;
-        }
+    print812( "PROC SENT: %d", registered_pid );
 
-        pid_t registered_pid = simple_strtol( pid_buffer[1], &endptr, 10 );
-        if ( registered_pid == 0 && endptr == pid_buffer ) {
-            print812( "Failed to parse pid" );
-            return 0;
-        }
-        
-        int initial_registered_count = registered_proc_count;
-        
-        int i=0;
-        for( i=0; i<MAX_REGISTERED_PROCS; i++ ) {
-            if(registered_pid == registered_pids[i]) {
-                print812( "Unregistering process %s", pid_buffer );
-                registered_pids[i] = -1;
-                registered_proc_count--;
-            }
-        }
+    int initial_registered_count = registered_proc_count;
 
-        if( initial_registered_count == registered_proc_count ) {
-            print812( "Could not find process %s to unregister", pid_buffer[1] );
+    int i=0;
+    for( i=0; i<MAX_REGISTERED_PROCS; i++ ) {
+        if(registered_pids[i] == registered_pid) {
+            print812( "Unregistering process %s", pid_buffer );
+            registered_pids[i] = -1;
+            registered_proc_count--;   
         }
     }
-    else {
-        print812( "Registering process %s", pid_buffer );
 
+    if(initial_registered_count == registered_proc_count) {
         if(registered_proc_count < MAX_REGISTERED_PROCS) {
-            int i=0 ;
+            i=0;
             for( i=0; i<MAX_REGISTERED_PROCS; i++ ) {
                 if( registered_pids[i] == -1 ) {
-                    pid_t registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
-                    if ( registered_pid == 0 && endptr == pid_buffer ) {
-                        print812( "Failed to parse pid" );
-                    }
-                    else {
-                        registered_pids[i] = registered_pid;
-                        registered_proc_count++;
-                    }
+                    print812( "Registering process %s", pid_buffer );
+                    registered_pids[i] = registered_pid;
+                    registered_proc_count++;
+                    break;
                 }
             }
         }
@@ -175,18 +156,24 @@ void SendKey()
     sinfo->si_signo = SIGIO;
     sinfo->si_code = SI_USER;
   
+    //print812( "SendKey" );
+    
     int i=0;
     for(i=0; i<MAX_REGISTERED_PROCS; i++) { 
         struct task_struct *task;
 
         if( registered_pids[i] != -1  ) {
+      //      print812( "BEFORE TASK" );
             task =  pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
+        //    print812( "AFTER TASK" );
             if ( task == NULL ) {
                 print812( "Failed to find task with pid %d", registered_pids[i] );
                 return;
             }
 
+          //  print812( "BEFORE SEND" );
             send_sig_info( SIGIO, sinfo, task );
+            //print812( "AFTER SEND" );
         }
     }
 
