@@ -185,24 +185,18 @@ void SendKey()
     sinfo->si_signo = SIGIO;
     sinfo->si_code = SI_USER;
   
-    //print812( "SendKey" );
-    
     int i=0;
     for(i=0; i<MAX_REGISTERED_PROCS; i++) { 
         struct task_struct *task;
 
         if( registered_pids[i] != -1  ) {
-      //      print812( "BEFORE TASK" );
             task =  pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
-        //    print812( "AFTER TASK" );
             if ( task == NULL ) {
                 print812( "Failed to find task with pid %d", registered_pids[i] );
                 return;
             }
 
-          //  print812( "BEFORE SEND" );
             send_sig_info( SIGIO, sinfo, task );
-            //print812( "AFTER SEND" );
         }
     }
 
