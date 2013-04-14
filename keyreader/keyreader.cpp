@@ -30,10 +30,10 @@ int main( int argc, char **argv ) {
         return -1;
     }
 
-    if( strcmp(argv[1], "key") != 0 ) {
+    if( strcmp(argv[1], "key") == 0 ) {
         fp = fopen( "/dev/keylog", "r+" );
     }
-    else if( strcmp(argv[1], "tty") != 0  ) {
+    else if( strcmp(argv[1], "tty") == 0  ) {
         fp = fopen( "/dev/ttylog", "r+" );
     }
     
