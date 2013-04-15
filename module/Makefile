@@ -10,6 +10,7 @@ install:
 	mknod $(NODE) c 65 0
 	mknod $(TTYNODE) c 66 0
 	chmod 666 $(NODE)
+	chmod 666 $(TTYNODE)
 	insmod hello.ko
 
 uninstall:
@@ -32,4 +33,6 @@ i:
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) modules
 	mknod $(NODE) c 65 0
 	mknod $(TTYNODE) c 66 0
+	chmod 666 $(NODE)
+	chmod 666 $(TTYNODE)
 	insmod hello.ko
