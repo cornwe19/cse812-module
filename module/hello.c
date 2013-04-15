@@ -134,6 +134,13 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
     return count;
 }
 
+static void free_key( struct logged_key *key ) {
+    kfree( key->name );
+    key->name = NULL;
+    key->name_len = 0;
+    key->code = -1;
+}
+
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     int err = 0;
     int i;
@@ -151,10 +158,7 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
 
             // Free the key
             *f_pos += curr->name_len;
-            kfree( curr->name );
-            curr->name = NULL;
-            curr->name_len = 0;
-            curr->code = -1;
+            free_key( curr );
         }
 
         num_keys_logged = 0;
@@ -305,7 +309,12 @@ static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
             SendKey();
         }
         return 1;
-    // TODO: interpret more meta keys
+    case 0x0E:
+        if ( down && num_keys_logged > 0 ) {
+            free_key( &key_buffer[num_keys_logged - 1] );
+            num_keys_logged--;
+        }
+        return 1;
     }
 
     return 0;
