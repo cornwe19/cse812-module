@@ -44,6 +44,7 @@ int main( int argc, char **argv ) {
 
     pid_t this_pid = getpid();
 
+    // Register for IO signals
     fprintf( fp, "%d", this_pid);
     fflush( fp );
 
@@ -73,32 +74,15 @@ int main( int argc, char **argv ) {
         }
     }
 
-    //fp = fopen( "/dev/keylog", "r+" );
-    //if ( fp == NULL ) {
-    //    perror( "Failed to open keylog file" );
-    //    return -1;
-   // }
-
-    //fprintf( fp, "%d", this_pid );
-    //fflush( fp );
-
     if ( read_buf != NULL ) {
         free( read_buf );
     }
 
+    // Unregister for signals
+    //  - Sending PID while registered unhooks process from being notified
     fprintf( fp, "%d", this_pid );
     fflush( fp );
     fclose( fp );
-
-    //fp = fopen( "/dev/keylog", "r+" );
-    //if ( fp == NULL ) {
-    //    perror( "Failed to open keylog file" );
-    //    return -1;
-    //}
-
-    //fprintf( fp, "%d", getpid() );
-    //fflush( fp );
-    //fclose( fp );
 
     return 0;
 }
