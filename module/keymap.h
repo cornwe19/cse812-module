@@ -352,8 +352,8 @@ const char* get_tty_key_str(const unsigned char *cp, int count)
             case 0x1a:  //^Z
                 return "[^Z]";
                 break;
-            case 0x1c:  //^\
-                return "[^\\]";
+            case 0x1c:  /*
+                return "[^\\]";*/
                 break;
             case 0x1d:  //^]
                 return "[^]]";
