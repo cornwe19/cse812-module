@@ -1,6 +1,6 @@
 **Building the project:**
 
-Run ```sudo ./build.sh``` to build and install the module as well as build the keyreader used to track keys from the module.
+Run ```sudo ./buildall.sh``` to build and install the module as well as build the keyreader used to track keys from the module.
 
 **Running the keyreader:**
 ```bash
