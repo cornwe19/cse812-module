@@ -26,5 +26,6 @@ sudo make uninstall
     * **Makefile** - *Builds and installs the keylogger kernel module*
     * **keylogger.c** - *Contains the primary implementation of the keylogger kernel module*
     * **keymap.h** - *Contains information to map keyboard key presses into readable strings*
+  * **Cornwell_Lesnau_Report.docx** - *Paper for the CSE 812 Spring 2013 Semester Project*
   * **README.md** - *Brief documentation in Markdown format to be displayed on GitHub*
   * **buildall.sh** - *Builds and installs keylogger module. Builds keyreader application*
